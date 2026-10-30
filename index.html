@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macro Trading App</title>
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-view" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-emerald-400">Macro Trading App</h1>
+        <p class="text-xs text-slate-400 mt-1">Acceso privado a tu plataforma</p>
+      </div>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Correo Electrónico</label>
+          <input type="email" id="email" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Contraseña</label>
+          <input type="password" id="password" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors">
+        </div>
+        <button type="submit" id="btn-login" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold py-3 rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+          Iniciar Sesión
+        </button>
+      </form>
+      <div id="login-error" class="hidden mt-4 text-xs text-red-400 text-center"></div>
+    </div>
+  </div>
+
+  <!-- PLATAFORMA PRINCIPAL -->
+  <div id="app-view" class="hidden flex-1 flex flex-col">
+    <!-- Header Navegación -->
+    <header class="bg-slate-950/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-lg font-bold text-emerald-400">MacroApp</span>
+          <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">v1.0</span>
+        </div>
+        
+        <!-- Pestañas (Tabs) -->
+        <nav class="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
+          <button id="tab-divisas" onclick="switchTab('divisas')" class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all bg-emerald-500 text-slate-950 font-semibold">
+            Divisas
+          </button>
+          <button id="tab-metales" onclick="switchTab('metales')" class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all text-slate-400 hover:text-slate-200">
+            Metales
+          </button>
+        </nav>
+
+        <button onclick="logout()" class="text-xs text-slate-400 hover:text-red-400 transition-colors">
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <!-- Sección Divisas -->
+      <section id="sec-divisas" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-slate-200">Panel de Divisas</h2>
+          <span class="text-xs text-slate-500">Actualización en tiempo real</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-slate-800/50 border border-slate-800 rounded-xl p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs text-slate-400 font-mono">EUR / USD</span>
+                <p class="text-xl font-bold mt-1 text-slate-100">1.0850</p>
+              </div>
+              <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs rounded-md">Prob. Alta Alcista</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sección Metales -->
+      <section id="sec-metales" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-slate-200">Panel de Metales</h2>
+          <span class="text-xs text-slate-500">Actualización en tiempo real</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-slate-800/50 border border-slate-800 rounded-xl p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs text-slate-400 font-mono">XAU / USD (Oro)</span>
+                <p class="text-xl font-bold mt-1 text-slate-100">$2,735.50</p>
+              </div>
+              <span class="px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs rounded-md">Alerta Rango</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // CONFIGURACIÓN SUPABASE (Reemplazar con tus credenciales)
+    const SUPABASE_URL = 'https://mdirnmbtelplzcpystce.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Gb_CT-7Br-TN7THkQwFbWw_tdoIcsfr';
+    
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Manejo de Sesión
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errDiv = document.getElementById('login-error');
+      
+      errDiv.classList.add('hidden');
+      
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) {
+        errDiv.textContent = 'Credenciales inválidas: ' + error.message;
+        errDiv.classList.remove('hidden');
+      } else {
+        checkSession();
+      }
+    });
+
+    async function checkSession() {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('app-view').classList.remove('hidden');
+      } else {
+        document.getElementById('login-view').classList.remove('hidden');
+        document.getElementById('app-view').classList.add('hidden');
+      }
+    }
+
+    async function logout() {
+      await db.auth.signOut();
+      checkSession();
+    }
+
+    // Navegación Pestañas
+    function switchTab(tab) {
+      const btnDiv = document.getElementById('tab-divisas');
+      const btnMet = document.getElementById('tab-metales');
+      const secDiv = document.getElementById('sec-divisas');
+      const secMet = document.getElementById('sec-metales');
+
+      if (tab === 'divisas') {
+        secDiv.classList.remove('hidden');
+        secMet.classList.add('hidden');
+        btnDiv.className = 'px-4 py-2 text-xs sm:text-sm rounded-lg transition-all bg-emerald-500 text-slate-950 font-semibold';
+        btnMet.className = 'px-4 py-2 text-xs sm:text-sm rounded-lg transition-all text-slate-400 hover:text-slate-200';
+      } else {
+        secMet.classList.remove('hidden');
+        secDiv.classList.add('hidden');
+        btnMet.className = 'px-4 py-2 text-xs sm:text-sm rounded-lg transition-all bg-emerald-500 text-slate-950 font-semibold';
+        btnDiv.className = 'px-4 py-2 text-xs sm:text-sm rounded-lg transition-all text-slate-400 hover:text-slate-200';
+      }
+    }
+
+    // Inicializar comprobación de sesión al cargar
+    checkSession();
+  </script>
+</body>
+</html>
