@@ -1,252 +1,135 @@
 <!DOCTYPE html>
 <html lang="es" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Macro Trading Terminal</title>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#090d16">
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            darkbg: '#090d16',
-            cardbg: '#111827',
-            bordercol: '#1f2937'
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Edge FX - Terminal Institucional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0B0F17',
+                        cardbg: '#111827',
+                        cardborder: '#1F2937',
+                        accentgreen: '#10B981',
+                        accentred: '#EF4444',
+                    }
+                }
+            }
         }
-      }
-    }
-  </script>
+    </script>
+    <style>
+        body { background-color: #0B0F17; color: #F3F4F6; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0B0F17; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 4px; }
+    </style>
 </head>
-<body class="bg-darkbg text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950 font-sans">
+<body class="min-h-screen flex flex-col antialiased">
 
-  <!-- PANTALLA DE LOGIN -->
-  <div id="login-view" class="fixed inset-0 z-50 flex items-center justify-center bg-darkbg p-4">
-    <div class="w-full max-w-md bg-cardbg border border-bordercol rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500"></div>
-      <div class="text-center mb-8">
-        <div class="inline-flex p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl mb-3 border border-emerald-500/20">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-view" class="fixed inset-0 z-50 flex items-center justify-center bg-darkbg p-4">
+        <div class="w-full max-w-md glass-card rounded-2xl p-8 shadow-2xl border border-cardborder">
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl mb-3 border border-emerald-500/20">
+                    <i data-lucide="trending-up" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">MACRO EDGE FX</h1>
+                <p class="text-xs text-slate-400 mt-1">Terminal Institucional de Macro Trading</p>
+            </div>
+
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
+                    <input type="email" id="email" required placeholder="trader@macroedge.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
+                    <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2">
+                    ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+
+            <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium">
+                Credenciales inválidas. Verifica tu correo y contraseña.
+            </div>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-white">Macro Trading Terminal</h1>
-        <p class="text-xs text-slate-400 mt-1">Introduce tus credenciales de acceso seguro</p>
-      </div>
-      <form id="login-form" class="space-y-5">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
-          <input type="email" id="email" required placeholder="admin@macro.com" class="w-full bg-slate-900/80 border border-bordercol rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
-          <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-bordercol rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
-        </div>
-        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99]">
-          Acceder al Sistema
-        </button>
-      </form>
-      <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium"></div>
     </div>
-  </div>
 
-  <!-- PLATAFORMA PRINCIPAL -->
-  <div id="app-view" class="hidden flex-1 flex flex-col">
-    <!-- Header Profesional -->
-    <header class="bg-cardbg/80 backdrop-blur-xl border-b border-bordercol sticky top-0 z-40 px-6 py-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-md shadow-emerald-500/20">M</div>
-          <div>
-            <span class="text-sm font-bold tracking-wide text-white block">MACRO TERMINAL</span>
-            <span class="text-[10px] text-emerald-400 font-mono tracking-wider uppercase block">● Sistema en Línea</span>
-          </div>
-        </div>
+    <!-- TERMINAL PRINCIPAL -->
+    <div id="app-view" class="hidden flex-1 flex flex-col">
         
-        <!-- Pestañas de Navegación -->
-        <nav class="flex bg-slate-900/90 border border-bordercol rounded-xl p-1.5 gap-1 shadow-inner">
-          <button id="tab-divisas" onclick="switchTab('divisas')" class="px-5 py-2 text-xs font-semibold rounded-lg transition-all bg-emerald-500 text-slate-950 shadow-sm">
-            💱 Divisas
-          </button>
-          <button id="tab-metales" onclick="switchTab('metales')" class="px-5 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
-            🥇 Metales
-          </button>
-        </nav>
+        <!-- HEADER ESTILO TERMINAL FINANCIERA -->
+        <header class="glass-card sticky top-0 z-40 border-b border-cardborder px-6 py-3">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-md">
+                        M
+                    </div>
+                    <div>
+                        <span class="text-sm font-bold tracking-wide text-white block">MACRO EDGE FX</span>
+                        <span class="text-[10px] text-emerald-400 font-mono">LIVE FEED CONNECTED</span>
+                    </div>
+                </div>
 
-        <button onclick="logout()" class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-          <span>Salir</span>
-        </button>
-      </div>
-    </header>
+                <!-- RELOJ UTC Y SESIONES DE MERCADO -->
+                <div class="flex items-center gap-6 text-xs font-mono">
+                    <div class="bg-slate-900/80 px-3 py-1.5 rounded-lg border border-cardborder flex items-center gap-2">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span id="utc-clock" class="text-white font-bold">00:00:00 UTC</span>
+                    </div>
 
-    <!-- Contenido Dinámico -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-      
-      <!-- SECCIÓN DIVISAS -->
-      <section id="sec-divisas" class="space-y-6 animate-fadeIn">
-        <div class="flex items-center justify-between border-b border-bordercol pb-4">
-          <div>
-            <h2 class="text-xl font-bold text-white tracking-tight">Análisis de Divisas</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Monitoreo de pares mayores y cruces institucionales.</p>
-          </div>
-          <span class="text-xs bg-slate-800 border border-bordercol text-slate-300 px-3 py-1.5 rounded-xl font-mono">Actualizado: En Vivo</span>
-        </div>
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center gap-1.5 text-slate-400">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LONDRES
+                        </span>
+                        <span class="flex items-center gap-1.5 text-slate-400">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> NUEVA YORK
+                        </span>
+                        <span class="flex items-center gap-1.5 text-slate-500">
+                            <span class="w-2 h-2 rounded-full bg-slate-700"></span> TOKIO
+                        </span>
+                    </div>
+                </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Tarjeta EUR/USD -->
-          <div class="bg-cardbg border border-bordercol rounded-2xl p-5 hover:border-emerald-500/50 transition-all shadow-xl group">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <span class="text-xs text-emerald-400 font-mono font-semibold uppercase tracking-wider">Forex Major</span>
-                <h3 class="text-lg font-bold text-white mt-0.5">EUR / USD</h3>
-              </div>
-              <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold rounded-lg">Alcista 78%</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="logout()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg border border-cardborder transition-all flex items-center gap-1.5">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Salir
+                    </button>
+                </div>
             </div>
-            <div class="flex items-baseline justify-between mt-4 pt-4 border-t border-bordercol/60">
-              <div>
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Precio Actual</span>
-                <span class="text-2xl font-black font-mono text-white">1.0850</span>
-              </div>
-              <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">+0.34%</span>
-            </div>
-          </div>
+        </header>
 
-          <!-- Tarjeta GBP/USD -->
-          <div class="bg-cardbg border border-bordercol rounded-2xl p-5 hover:border-emerald-500/50 transition-all shadow-xl group">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <span class="text-xs text-emerald-400 font-mono font-semibold uppercase tracking-wider">Forex Major</span>
-                <h3 class="text-lg font-bold text-white mt-0.5">GBP / USD</h3>
-              </div>
-              <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-semibold rounded-lg">Rango / Lateral</span>
-            </div>
-            <div class="flex items-baseline justify-between mt-4 pt-4 border-t border-bordercol/60">
-              <div>
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Precio Actual</span>
-                <span class="text-2xl font-black font-mono text-white">1.2980</span>
-              </div>
-              <span class="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md">-0.05%</span>
-            </div>
-          </div>
-        </div>
-      </section>
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6 custom-scrollbar">
 
-      <!-- SECCIÓN METALES -->
-      <section id="sec-metales" class="hidden space-y-6 animate-fadeIn">
-        <div class="flex items-center justify-between border-b border-bordercol pb-4">
-          <div>
-            <h2 class="text-xl font-bold text-white tracking-tight">Análisis de Metales Preciosos</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Seguimiento de activos refugio y commodities clave.</p>
-          </div>
-          <span class="text-xs bg-slate-800 border border-bordercol text-slate-300 px-3 py-1.5 rounded-xl font-mono">Actualizado: En Vivo</span>
-        </div>
+            <!-- 1. MATRIZ DE FUERZA DE DIVISAS (8 DIVISAS PRINCIPALES) -->
+            <section>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i> MATRIZ DE FUERZA DE DIVISAS (CURRENCY STRENGTH METER)
+                    </h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="strength-matrix">
+                    <!-- Generado dinámicamente -->
+                </div>
+            </section>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Tarjeta Oro -->
-          <div class="bg-cardbg border border-bordercol rounded-2xl p-5 hover:border-amber-500/50 transition-all shadow-xl group">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <span class="text-xs text-amber-400 font-mono font-semibold uppercase tracking-wider">Commodity Refugio</span>
-                <h3 class="text-lg font-bold text-white mt-0.5">XAU / USD (Oro)</h3>
-              </div>
-              <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-semibold rounded-lg">Alerta de Rango</span>
-            </div>
-            <div class="flex items-baseline justify-between mt-4 pt-4 border-t border-bordercol/60">
-              <div>
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Precio Actual</span>
-                <span class="text-2xl font-black font-mono text-white">$2,735.50</span>
-              </div>
-              <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">+0.82%</span>
-            </div>
-          </div>
-
-          <!-- Tarjeta Plata -->
-          <div class="bg-cardbg border border-bordercol rounded-2xl p-5 hover:border-amber-500/50 transition-all shadow-xl group">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <span class="text-xs text-amber-400 font-mono font-semibold uppercase tracking-wider">Commodity Industrial</span>
-                <h3 class="text-lg font-bold text-white mt-0.5">XAG / USD (Plata)</h3>
-              </div>
-              <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold rounded-lg">Tendencia Fuerte</span>
-            </div>
-            <div class="flex items-baseline justify-between mt-4 pt-4 border-t border-bordercol/60">
-              <div>
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider block">Precio Actual</span>
-                <span class="text-2xl font-black font-mono text-white">$32.40</span>
-              </div>
-              <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md">+1.45%</span>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://mdirnmbtelplzcpystce.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kaXJubWJ0ZWxwbHpjcHlzdGNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzOTUyMTYsImV4cCI6MjEwODk3MTIxNn0.UagG6oULPYNKh0IeUFMtEQeBSTqBu5S025LRH9MiCVk';
-    
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errDiv = document.getElementById('login-error');
-      
-      errDiv.classList.add('hidden');
-      
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
-      if (error) {
-        errDiv.textContent = 'Acceso Denegado: Credenciales inválidas.';
-        errDiv.classList.remove('hidden');
-      } else {
-        checkSession();
-      }
-    });
-
-    async function checkSession() {
-      const { data: { session } } = await db.auth.getSession();
-      if (session) {
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('app-view').classList.remove('hidden');
-      } else {
-        document.getElementById('login-view').classList.remove('hidden');
-        document.getElementById('app-view').classList.add('hidden');
-      }
-    }
-
-    async function logout() {
-      await db.auth.signOut();
-      checkSession();
-    }
-
-    function switchTab(tab) {
-      const btnDiv = document.getElementById('tab-divisas');
-      const btnMet = document.getElementById('tab-metales');
-      const secDiv = document.getElementById('sec-divisas');
-      const secMet = document.getElementById('sec-metales');
-
-      if (tab === 'divisas') {
-        secDiv.classList.remove('hidden');
-        secMet.classList.add('hidden');
-        btnDiv.className = 'px-5 py-2 text-xs font-semibold rounded-lg transition-all bg-emerald-500 text-slate-950 shadow-sm';
-        btnMet.className = 'px-5 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white';
-      } else {
-        secMet.classList.remove('hidden');
-        secDiv.classList.add('hidden');
-        btnMet.className = 'px-5 py-2 text-xs font-semibold rounded-lg transition-all bg-emerald-500 text-slate-950 shadow-sm';
-        btnDiv.className = 'px-5 py-2 text-xs font-semibold rounded-lg transition-all text-slate-400 hover:text-white';
-      }
-    }
-
-    checkSession();
-  </script>
-</body>
-</html>
+            <!-- 2. SIMULADOR DE NOTICIAS FOREX FACTORY (SANDBOX INTERACTIVO) -->
+            <section class="glass-card rounded-2xl p-4 border border-cardborder">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">
