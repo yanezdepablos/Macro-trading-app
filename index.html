@@ -56,7 +56,6 @@
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
                     <input type="password" id="password" placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
-                <!-- Botón con llamada directa onclick para evitar bloqueos -->
                 <button type="button" id="btn-login" onclick="handleLoginDirect()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                     ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
@@ -144,8 +143,10 @@
 
         let client = null;
         function getClient() {
-            if (!client && window.supabase && window.supabase.createClient) {
-                client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            if (!client && window.supabase) {
+                client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { persistSession: true, autoRefreshToken: true }
+                });
             }
             return client;
         }
@@ -188,7 +189,7 @@
             try {
                 const { data, error } = await sb.auth.signInWithPassword({ email, password });
                 if (error) {
-                    errDiv.textContent = 'Acceso Denegado: ' + error.message;
+                    errDiv.textContent = 'Error de Autenticación: ' + error.message;
                     errDiv.classList.remove('hidden');
                     btn.innerText = 'ACCEDER A LA TERMINAL →';
                 } else {
@@ -198,7 +199,7 @@
                     renderPairs();
                 }
             } catch (err) {
-                errDiv.textContent = 'Error de red: ' + err.message;
+                errDiv.textContent = 'Fallo de red al conectar con Supabase. Revisa tu conexión.';
                 errDiv.classList.remove('hidden');
                 btn.innerText = 'ACCEDER A LA TERMINAL →';
             }
