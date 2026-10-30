@@ -47,7 +47,7 @@
                 <p class="text-xs text-slate-400 mt-1">Terminal Institucional de Macro Trading</p>
             </div>
 
-            <form id="login-form" class="space-y-5">
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
                     <input type="email" id="email" required placeholder="tu-correo@gmail.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
@@ -56,14 +56,12 @@
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
                     <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
-                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2">
+                <button type="submit" id="btn-login" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2">
                     ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </form>
 
-            <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium">
-                Credenciales inválidas. Verifica tu correo y contraseña.
-            </div>
+            <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium"></div>
         </div>
     </div>
 
@@ -115,19 +113,17 @@
         <!-- CONTENIDO PRINCIPAL -->
         <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6 custom-scrollbar">
 
-            <!-- 1. MATRIZ DE FUERZA DE DIVISAS (8 DIVISAS PRINCIPALES) -->
+            <!-- 1. MATRIZ DE FUERZA DE DIVISAS -->
             <section>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                         <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i> MATRIZ DE FUERZA DE DIVISAS (CURRENCY STRENGTH METER)
                     </h2>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="strength-matrix">
-                    <!-- Generado dinámicamente -->
-                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="strength-matrix"></div>
             </section>
 
-            <!-- 2. SIMULADOR DE NOTICIAS FOREX FACTORY (SANDBOX INTERACTIVO) -->
+            <!-- 2. SIMULADOR DE NOTICIAS FOREX FACTORY (SANDBOX) -->
             <section class="glass-card rounded-2xl p-4 border border-cardborder">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -154,7 +150,7 @@
 
             <!-- 3. TABLA DE POSICIONES Y RANKING DE PARES -->
             <section class="glass-card rounded-2xl border border-cardborder overflow-hidden">
-                <div class="p-4 border-b border-cardborder flex flex-wrap items-center justify-between gap-4">
+                <div class="p-4 border-b border-cardborder flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-bold text-white tracking-wide">RANKING DE PARES MACRO (DELTA DIVERGENCIA)</h3>
                         <p class="text-xs text-slate-400">Ordenados algorítmicamente por mayor probabilidad de sesgo institucional</p>
@@ -173,9 +169,7 @@
                                 <th class="p-3 text-right">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="pairs-table-body" class="divide-y divide-cardborder/50 text-slate-300">
-                            <!-- Filas generadas dinámicamente -->
-                        </tbody>
+                        <tbody id="pairs-table-body" class="divide-y divide-cardborder/50 text-slate-300"></tbody>
                     </table>
                 </div>
             </section>
@@ -183,7 +177,7 @@
         </main>
     </div>
 
-    <!-- MODAL DE TESIS FUNDAMENTAL ALGORÍTMICA -->
+    <!-- MODAL DE TESIS -->
     <div id="thesis-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
         <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-cardborder space-y-4">
             <div class="flex items-center justify-between border-b border-cardborder pb-3">
@@ -195,9 +189,7 @@
             </div>
             <div>
                 <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tesis Fundamental Algorítmica</h4>
-                <p id="modal-thesis-text" class="text-sm text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-cardborder">
-                    Cargando análisis institucional...
-                </p>
+                <p id="modal-thesis-text" class="text-sm text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-cardborder"></p>
             </div>
             <div class="pt-2 flex justify-end">
                 <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">Cerrar</button>
@@ -205,15 +197,20 @@
         </div>
     </div>
 
-    <!-- LÓGICA DE JAVASCRIPT Y SUPABASE -->
+    <!-- SCRIPT DE INICIALIZACIÓN -->
     <script>
         const SUPABASE_URL = 'https://mdirnmbtelplzcpcystce.supabase.co';
         const SUPABASE_KEY = 'ey3hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey3pc3VpOiJzdXBhYmFzZSIsInJlZiI6Im1kaXJubWJ0ZWxwbHpjcGN5c3RjZSIsInJvbGUiOiJhb24iLCJpYXQiOjE3MjY3Mjc5MTMsImV4cCI6MjA0MjMwNzkxM30.4iLClCYxIqjinjt9DTMuffMylgSLU4lHk8xsExFEqg0';
 
-        // Inicialización corregida del cliente de Supabase
-        const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+        let client = null;
 
-        // Estado Global de Divisas
+        function getClient() {
+            if (!client && window.supabase && window.supabase.createClient) {
+                client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+            return client;
+        }
+
         let currencies = {
             USD: { score: 7.8, status: 'Fuerte' },
             EUR: { score: 3.2, status: 'Débil' },
@@ -225,44 +222,52 @@
             NZD: { score: 4.8, status: 'Neutral' }
         };
 
-        // Pares de Trading
         const pairsData = [
-            { pair: 'USD/JPY', thesis: 'Fuerte divergencia de política monetaria entre Fed (Hawkish) y BoJ (Dovish). Rendimiento de los bonos del tesoro impulsando el par.' },
-            { pair: 'EUR/USD', thesis: 'Debilitamiento macro en la Eurozona con CPI a la baja. Fortaleza relativa del USD sustentada por datos de empleo.' },
-            { pair: 'GBP/USD', thesis: 'Consolidación lateral. Banco de Inglaterra mantiene tipos elevados pero crecimiento se frena.' },
-            { pair: 'USD/CAD', thesis: 'Petróleo moderado favorece la fortaleza del USD frente al CAD a corto plazo.' }
+            { pair: 'USD/JPY', thesis: 'Fuerte divergencia de política monetaria entre Fed (Hawkish) y BoJ (Dovish).' },
+            { pair: 'EUR/USD', thesis: 'Debilitamiento macro en la Eurozona con CPI a la baja.' },
+            { pair: 'GBP/USD', thesis: 'Consolidación lateral del Banco de Inglaterra.' },
+            { pair: 'USD/CAD', thesis: 'Petróleo moderado favorece la fortaleza del USD.' }
         ];
 
-        // Autenticación
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const errDiv = document.getElementById('login-error');
+            const btn = document.getElementById('btn-login');
+            
             errDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerText = 'CONECTANDO...';
 
+            const sb = getClient();
             if (!sb) {
-                errDiv.textContent = 'Error al cargar la librería de Supabase. Revisa la conexión.';
+                errDiv.textContent = 'Error: Supabase CDN no ha cargado.';
                 errDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.innerText = 'ACCEDER A LA TERMINAL →';
                 return;
             }
 
             try {
                 const { data, error } = await sb.auth.signInWithPassword({ email, password });
-
                 if (error) {
-                    errDiv.textContent = 'Acceso Denegado: ' + error.message;
+                    errDiv.textContent = 'Error: ' + error.message;
                     errDiv.classList.remove('hidden');
                 } else {
                     checkSession();
                 }
             } catch (err) {
-                errDiv.textContent = 'Error de conexión con la base de datos.';
+                errDiv.textContent = 'Error inesperado: ' + err.message;
                 errDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'ACCEDER A LA TERMINAL →';
             }
-        });
+        }
 
         async function checkSession() {
+            const sb = getClient();
             if (!sb) return;
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
@@ -277,13 +282,14 @@
         }
 
         async function logout() {
+            const sb = getClient();
             if (sb) await sb.auth.signOut();
             checkSession();
         }
 
-        // Render Matriz de Divisas
         function renderMatrix() {
             const container = document.getElementById('strength-matrix');
+            if(!container) return;
             container.innerHTML = '';
             for (const [curr, info] of Object.entries(currencies)) {
                 const percentage = (info.score / 10) * 100;
@@ -303,9 +309,9 @@
             }
         }
 
-        // Render Tabla de Pares
         function renderPairs() {
             const tbody = document.getElementById('pairs-table-body');
+            if(!tbody) return;
             tbody.innerHTML = '';
             
             pairsData.forEach(item => {
@@ -317,8 +323,7 @@
                 const dir = delta > 0.5 ? 'BUY' : delta < -0.5 ? 'SELL' : 'NEUTRAL';
                 const prob = Math.min(95, Math.max(55, Math.round(50 + Math.abs(delta) * 8)));
                 const risk = prob > 75 ? 'Bajo' : prob > 60 ? 'Medio' : 'Alto';
-
-                const dirClass = dir === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : dir === 'SELL' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-800 text-slate-400 border-slate-700';
+                const dirClass = dir === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (dir === 'SELL' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-800 text-slate-400 border-slate-700');
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900/40 transition-all">
@@ -337,18 +342,10 @@
             });
         }
 
-        // Escenarios Sandbox
         function triggerScenario(type) {
-            if (type === 'USD_NFP_BULL') {
-                currencies.USD.score = 9.2;
-                currencies.USD.status = 'Muy Fuerte';
-            } else if (type === 'EUR_CPI_BEAR') {
-                currencies.EUR.score = 1.8;
-                currencies.EUR.status = 'Muy Débil';
-            } else if (type === 'BOJ_HAWKISH') {
-                currencies.JPY.score = 8.0;
-                currencies.JPY.status = 'Fuerte';
-            }
+            if (type === 'USD_NFP_BULL') { currencies.USD.score = 9.2; currencies.USD.status = 'Muy Fuerte'; }
+            else if (type === 'EUR_CPI_BEAR') { currencies.EUR.score = 1.8; currencies.EUR.status = 'Muy Débil'; }
+            else if (type === 'BOJ_HAWKISH') { currencies.JPY.score = 8.0; currencies.JPY.status = 'Fuerte'; }
             renderMatrix();
             renderPairs();
         }
@@ -368,7 +365,6 @@
             renderPairs();
         }
 
-        // Modal
         function openModal(pair, dir, thesis) {
             document.getElementById('modal-pair-title').textContent = pair;
             const biasEl = document.getElementById('modal-pair-bias');
@@ -382,13 +378,12 @@
             document.getElementById('thesis-modal').classList.add('hidden');
         }
 
-        // Reloj UTC
         setInterval(() => {
             const now = new Date();
-            document.getElementById('utc-clock').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+            const clockEl = document.getElementById('utc-clock');
+            if(clockEl) clockEl.textContent = now.toUTCString().split(' ')[4] + ' UTC';
         }, 1000);
 
-        // Inicialización
         window.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
             checkSession();
