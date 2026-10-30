@@ -50,7 +50,7 @@
             <form id="login-form" class="space-y-5">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
-                    <input type="email" id="email" required placeholder="trader@macroedge.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                    <input type="email" id="email" required placeholder="tu-correo@gmail.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
@@ -132,4 +132,267 @@
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
                         <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
-                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">SIMULADOR DE ESCENARIOS FOREX FACTORY (SANDBOX)</h3>
+                    </div>
+                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">RECALCULA EN TIEMPO REAL</span>
+                </div>
+                <div class="flex flex-wrap gap-2" id="sandbox-controls">
+                    <button onclick="triggerScenario('USD_NFP_BULL')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> USD NFP Supera Expectativas
+                    </button>
+                    <button onclick="triggerScenario('EUR_CPI_BEAR')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span> EUR CPI Caída Fuerte
+                    </button>
+                    <button onclick="triggerScenario('BOJ_HAWKISH')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> BoJ Subida de Tipos (+25bps)
+                    </button>
+                    <button onclick="resetScenarios()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-xl border border-cardborder transition-all ml-auto">
+                        Restablecer Escenarios
+                    </button>
+                </div>
+            </section>
+
+            <!-- 3. TABLA DE POSICIONES Y RANKING DE PARES -->
+            <section class="glass-card rounded-2xl border border-cardborder overflow-hidden">
+                <div class="p-4 border-b border-cardborder flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white tracking-wide">RANKING DE PARES MACRO (DELTA DIVERGENCIA)</h3>
+                        <p class="text-xs text-slate-400">Ordenados algorítmicamente por mayor probabilidad de sesgo institucional</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900/50 text-slate-400 uppercase font-mono border-b border-cardborder">
+                            <tr>
+                                <th class="p-3">Par</th>
+                                <th class="p-3">Dirección</th>
+                                <th class="p-3">Delta Macro</th>
+                                <th class="p-3">Probabilidad</th>
+                                <th class="p-3">Riesgo</th>
+                                <th class="p-3 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pairs-table-body" class="divide-y divide-cardborder/50 text-slate-300">
+                            <!-- Filas generadas dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL DE TESIS FUNDAMENTAL ALGORÍTMICA -->
+    <div id="thesis-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-cardborder space-y-4">
+            <div class="flex items-center justify-between border-b border-cardborder pb-3">
+                <div class="flex items-center gap-2">
+                    <span id="modal-pair-title" class="text-lg font-bold text-white">EUR/USD</span>
+                    <span id="modal-pair-bias" class="px-2 py-0.5 rounded text-xs font-bold">BUY</span>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tesis Fundamental Algorítmica</h4>
+                <p id="modal-thesis-text" class="text-sm text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-cardborder">
+                    Cargando análisis institucional...
+                </p>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LÓGICA DE JAVASCRIPT Y SUPABASE -->
+    <script>
+        const SUPABASE_URL = 'https://mdirnmbtelplzcpcystce.supabase.co';
+        const SUPABASE_KEY = 'ey3hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey3pc3VpOiJzdXBhYmFzZSIsInJlZiI6Im1kaXJubWJ0ZWxwbHpjcGN5c3RjZSIsInJvbGUiOiJhb24iLCJpYXQiOjE3MjY3Mjc5MTMsImV4cCI6MjA0MjMwNzkxM30.4iLClCYxIqjinjt9DTMuffMylgSLU4lHk8xsExFEqg0';
+
+        // Inicialización corregida del cliente de Supabase
+        const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+        // Estado Global de Divisas
+        let currencies = {
+            USD: { score: 7.8, status: 'Fuerte' },
+            EUR: { score: 3.2, status: 'Débil' },
+            GBP: { score: 6.1, status: 'Neutral' },
+            JPY: { score: 2.4, status: 'Muy Débil' },
+            AUD: { score: 5.5, status: 'Neutral' },
+            CAD: { score: 6.8, status: 'Fuerte' },
+            CHF: { score: 4.1, status: 'Débil' },
+            NZD: { score: 4.8, status: 'Neutral' }
+        };
+
+        // Pares de Trading
+        const pairsData = [
+            { pair: 'USD/JPY', thesis: 'Fuerte divergencia de política monetaria entre Fed (Hawkish) y BoJ (Dovish). Rendimiento de los bonos del tesoro impulsando el par.' },
+            { pair: 'EUR/USD', thesis: 'Debilitamiento macro en la Eurozona con CPI a la baja. Fortaleza relativa del USD sustentada por datos de empleo.' },
+            { pair: 'GBP/USD', thesis: 'Consolidación lateral. Banco de Inglaterra mantiene tipos elevados pero crecimiento se frena.' },
+            { pair: 'USD/CAD', thesis: 'Petróleo moderado favorece la fortaleza del USD frente al CAD a corto plazo.' }
+        ];
+
+        // Autenticación
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errDiv = document.getElementById('login-error');
+            errDiv.classList.add('hidden');
+
+            if (!sb) {
+                errDiv.textContent = 'Error al cargar la librería de Supabase. Revisa la conexión.';
+                errDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    errDiv.textContent = 'Acceso Denegado: ' + error.message;
+                    errDiv.classList.remove('hidden');
+                } else {
+                    checkSession();
+                }
+            } catch (err) {
+                errDiv.textContent = 'Error de conexión con la base de datos.';
+                errDiv.classList.remove('hidden');
+            }
+        });
+
+        async function checkSession() {
+            if (!sb) return;
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('hidden');
+                renderMatrix();
+                renderPairs();
+            } else {
+                document.getElementById('login-view').classList.remove('hidden');
+                document.getElementById('app-view').classList.add('hidden');
+            }
+        }
+
+        async function logout() {
+            if (sb) await sb.auth.signOut();
+            checkSession();
+        }
+
+        // Render Matriz de Divisas
+        function renderMatrix() {
+            const container = document.getElementById('strength-matrix');
+            container.innerHTML = '';
+            for (const [curr, info] of Object.entries(currencies)) {
+                const percentage = (info.score / 10) * 100;
+                const color = info.score >= 6 ? 'bg-emerald-500' : info.score <= 4 ? 'bg-red-500' : 'bg-amber-500';
+                container.innerHTML += `
+                    <div class="glass-card p-3 rounded-xl border border-cardborder flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-sm text-white">${curr}</span>
+                            <span class="text-xs font-mono text-slate-400">${info.score.toFixed(1)}</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden mb-1">
+                            <div class="${color} h-1.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="text-[10px] text-slate-500 uppercase tracking-wider">${info.status}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Render Tabla de Pares
+        function renderPairs() {
+            const tbody = document.getElementById('pairs-table-body');
+            tbody.innerHTML = '';
+            
+            pairsData.forEach(item => {
+                const [base, quote] = item.pair.split('/');
+                const baseScore = currencies[base] ? currencies[base].score : 5;
+                const quoteScore = currencies[quote] ? currencies[quote].score : 5;
+                const delta = baseScore - quoteScore;
+                
+                const dir = delta > 0.5 ? 'BUY' : delta < -0.5 ? 'SELL' : 'NEUTRAL';
+                const prob = Math.min(95, Math.max(55, Math.round(50 + Math.abs(delta) * 8)));
+                const risk = prob > 75 ? 'Bajo' : prob > 60 ? 'Medio' : 'Alto';
+
+                const dirClass = dir === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : dir === 'SELL' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-800 text-slate-400 border-slate-700';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-all">
+                        <td class="p-3 font-bold text-white">${item.pair}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${dirClass}">${dir}</span></td>
+                        <td class="p-3 font-mono ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</td>
+                        <td class="p-3 font-mono text-white">${prob}%</td>
+                        <td class="p-3 text-slate-400">${risk}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="openModal('${item.pair}', '${dir}', '${item.thesis}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg text-[11px] font-medium transition-all">
+                                Ver Tesis
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Escenarios Sandbox
+        function triggerScenario(type) {
+            if (type === 'USD_NFP_BULL') {
+                currencies.USD.score = 9.2;
+                currencies.USD.status = 'Muy Fuerte';
+            } else if (type === 'EUR_CPI_BEAR') {
+                currencies.EUR.score = 1.8;
+                currencies.EUR.status = 'Muy Débil';
+            } else if (type === 'BOJ_HAWKISH') {
+                currencies.JPY.score = 8.0;
+                currencies.JPY.status = 'Fuerte';
+            }
+            renderMatrix();
+            renderPairs();
+        }
+
+        function resetScenarios() {
+            currencies = {
+                USD: { score: 7.8, status: 'Fuerte' },
+                EUR: { score: 3.2, status: 'Débil' },
+                GBP: { score: 6.1, status: 'Neutral' },
+                JPY: { score: 2.4, status: 'Muy Débil' },
+                AUD: { score: 5.5, status: 'Neutral' },
+                CAD: { score: 6.8, status: 'Fuerte' },
+                CHF: { score: 4.1, status: 'Débil' },
+                NZD: { score: 4.8, status: 'Neutral' }
+            };
+            renderMatrix();
+            renderPairs();
+        }
+
+        // Modal
+        function openModal(pair, dir, thesis) {
+            document.getElementById('modal-pair-title').textContent = pair;
+            const biasEl = document.getElementById('modal-pair-bias');
+            biasEl.textContent = dir;
+            biasEl.className = px-2 py-0.5 rounded text-xs font-bold ${dir === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'};
+            document.getElementById('modal-thesis-text').textContent = thesis;
+            document.getElementById('thesis-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('thesis-modal').classList.add('hidden');
+        }
+
+        // Reloj UTC
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('utc-clock').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+        }, 1000);
+
+        // Inicialización
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            checkSession();
+        });
+    </script>
+</body>
+</html>
