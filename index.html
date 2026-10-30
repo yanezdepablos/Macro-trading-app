@@ -47,19 +47,20 @@
                 <p class="text-xs text-slate-400 mt-1">Terminal Institucional de Macro Trading</p>
             </div>
 
-            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
+            <div class="space-y-5">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
-                    <input type="email" id="email" required placeholder="tu-correo@gmail.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                    <input type="email" id="email" value="yanezdepablos6@gmail.com" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
-                    <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                    <input type="password" id="password" placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
-                <button type="submit" id="btn-login" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2">
+                <!-- Botón con llamada directa onclick para evitar bloqueos -->
+                <button type="button" id="btn-login" onclick="handleLoginDirect()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                     ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
-            </form>
+            </div>
 
             <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium"></div>
         </div>
@@ -67,42 +68,22 @@
 
     <!-- TERMINAL PRINCIPAL -->
     <div id="app-view" class="hidden flex-1 flex flex-col">
-        
-        <!-- HEADER ESTILO TERMINAL FINANCIERA -->
         <header class="glass-card sticky top-0 z-40 border-b border-cardborder px-6 py-3">
             <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-                
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-md">
-                        M
-                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-md">M</div>
                     <div>
                         <span class="text-sm font-bold tracking-wide text-white block">MACRO EDGE FX</span>
                         <span class="text-[10px] text-emerald-400 font-mono">LIVE FEED CONNECTED</span>
                     </div>
                 </div>
-
-                <!-- RELOJ UTC Y SESIONES DE MERCADO -->
                 <div class="flex items-center gap-6 text-xs font-mono">
                     <div class="bg-slate-900/80 px-3 py-1.5 rounded-lg border border-cardborder flex items-center gap-2">
                         <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
                         <span id="utc-clock" class="text-white font-bold">00:00:00 UTC</span>
                     </div>
-
-                    <div class="flex items-center gap-3">
-                        <span class="flex items-center gap-1.5 text-slate-400">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LONDRES
-                        </span>
-                        <span class="flex items-center gap-1.5 text-slate-400">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> NUEVA YORK
-                        </span>
-                        <span class="flex items-center gap-1.5 text-slate-500">
-                            <span class="w-2 h-2 rounded-full bg-slate-700"></span> TOKIO
-                        </span>
-                    </div>
                 </div>
-
-                <div class="flex items-center gap-3">
+                <div>
                     <button onclick="logout()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg border border-cardborder transition-all flex items-center gap-1.5">
                         <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Salir
                     </button>
@@ -110,10 +91,7 @@
             </div>
         </header>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6 custom-scrollbar">
-
-            <!-- 1. MATRIZ DE FUERZA DE DIVISAS -->
             <section>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
@@ -123,40 +101,24 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="strength-matrix"></div>
             </section>
 
-            <!-- 2. SIMULADOR DE NOTICIAS FOREX FACTORY (SANDBOX) -->
             <section class="glass-card rounded-2xl p-4 border border-cardborder">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
                         <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
                         <h3 class="text-xs font-bold text-white uppercase tracking-wider">SIMULADOR DE ESCENARIOS FOREX FACTORY (SANDBOX)</h3>
                     </div>
-                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">RECALCULA EN TIEMPO REAL</span>
                 </div>
-                <div class="flex flex-wrap gap-2" id="sandbox-controls">
-                    <button onclick="triggerScenario('USD_NFP_BULL')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> USD NFP Supera Expectativas
-                    </button>
-                    <button onclick="triggerScenario('EUR_CPI_BEAR')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-red-500"></span> EUR CPI Caída Fuerte
-                    </button>
-                    <button onclick="triggerScenario('BOJ_HAWKISH')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> BoJ Subida de Tipos (+25bps)
-                    </button>
-                    <button onclick="resetScenarios()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-xl border border-cardborder transition-all ml-auto">
-                        Restablecer Escenarios
-                    </button>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="triggerScenario('USD_NFP_BULL')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder">USD NFP Supera Expectativas</button>
+                    <button onclick="triggerScenario('EUR_CPI_BEAR')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder">EUR CPI Caída Fuerte</button>
+                    <button onclick="resetScenarios()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-xl border border-cardborder ml-auto">Restablecer</button>
                 </div>
             </section>
 
-            <!-- 3. TABLA DE POSICIONES Y RANKING DE PARES -->
             <section class="glass-card rounded-2xl border border-cardborder overflow-hidden">
-                <div class="p-4 border-b border-cardborder flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-bold text-white tracking-wide">RANKING DE PARES MACRO (DELTA DIVERGENCIA)</h3>
-                        <p class="text-xs text-slate-400">Ordenados algorítmicamente por mayor probabilidad de sesgo institucional</p>
-                    </div>
+                <div class="p-4 border-b border-cardborder">
+                    <h3 class="text-sm font-bold text-white tracking-wide">RANKING DE PARES MACRO (DELTA DIVERGENCIA)</h3>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-900/50 text-slate-400 uppercase font-mono border-b border-cardborder">
@@ -166,44 +128,21 @@
                                 <th class="p-3">Delta Macro</th>
                                 <th class="p-3">Probabilidad</th>
                                 <th class="p-3">Riesgo</th>
-                                <th class="p-3 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="pairs-table-body" class="divide-y divide-cardborder/50 text-slate-300"></tbody>
                     </table>
                 </div>
             </section>
-
         </main>
     </div>
 
-    <!-- MODAL DE TESIS -->
-    <div id="thesis-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-        <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-cardborder space-y-4">
-            <div class="flex items-center justify-between border-b border-cardborder pb-3">
-                <div class="flex items-center gap-2">
-                    <span id="modal-pair-title" class="text-lg font-bold text-white">EUR/USD</span>
-                    <span id="modal-pair-bias" class="px-2 py-0.5 rounded text-xs font-bold">BUY</span>
-                </div>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div>
-                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tesis Fundamental Algorítmica</h4>
-                <p id="modal-thesis-text" class="text-sm text-slate-300 leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-cardborder"></p>
-            </div>
-            <div class="pt-2 flex justify-end">
-                <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCRIPT DE INICIALIZACIÓN -->
+    <!-- SCRIPT -->
     <script>
         const SUPABASE_URL = 'https://mdirnmbtelplzcpcystce.supabase.co';
         const SUPABASE_KEY = 'ey3hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey3pc3VpOiJzdXBhYmFzZSIsInJlZiI6Im1kaXJubWJ0ZWxwbHpjcGN5c3RjZSIsInJvbGUiOiJhb24iLCJpYXQiOjE3MjY3Mjc5MTMsImV4cCI6MjA0MjMwNzkxM30.4iLClCYxIqjinjt9DTMuffMylgSLU4lHk8xsExFEqg0';
 
         let client = null;
-
         function getClient() {
             if (!client && window.supabase && window.supabase.createClient) {
                 client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -223,28 +162,25 @@
         };
 
         const pairsData = [
-            { pair: 'USD/JPY', thesis: 'Fuerte divergencia de política monetaria entre Fed (Hawkish) y BoJ (Dovish).' },
-            { pair: 'EUR/USD', thesis: 'Debilitamiento macro en la Eurozona con CPI a la baja.' },
-            { pair: 'GBP/USD', thesis: 'Consolidación lateral del Banco de Inglaterra.' },
-            { pair: 'USD/CAD', thesis: 'Petróleo moderado favorece la fortaleza del USD.' }
+            { pair: 'USD/JPY', thesis: 'Divergencia Fed vs BoJ.' },
+            { pair: 'EUR/USD', thesis: 'CPI Eurozona a la baja.' },
+            { pair: 'GBP/USD', thesis: 'Lateralidad BoE.' },
+            { pair: 'USD/CAD', thesis: 'Petróleo moderado.' }
         ];
 
-        async function handleLogin(e) {
-            e.preventDefault();
+        async function handleLoginDirect() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const errDiv = document.getElementById('login-error');
             const btn = document.getElementById('btn-login');
             
             errDiv.classList.add('hidden');
-            btn.disabled = true;
             btn.innerText = 'CONECTANDO...';
 
             const sb = getClient();
             if (!sb) {
-                errDiv.textContent = 'Error: Supabase CDN no ha cargado.';
+                errDiv.textContent = 'Error: Supabase no disponible.';
                 errDiv.classList.remove('hidden');
-                btn.disabled = false;
                 btn.innerText = 'ACCEDER A LA TERMINAL →';
                 return;
             }
@@ -252,39 +188,20 @@
             try {
                 const { data, error } = await sb.auth.signInWithPassword({ email, password });
                 if (error) {
-                    errDiv.textContent = 'Error: ' + error.message;
+                    errDiv.textContent = 'Acceso Denegado: ' + error.message;
                     errDiv.classList.remove('hidden');
+                    btn.innerText = 'ACCEDER A LA TERMINAL →';
                 } else {
-                    checkSession();
+                    document.getElementById('login-view').classList.add('hidden');
+                    document.getElementById('app-view').classList.remove('hidden');
+                    renderMatrix();
+                    renderPairs();
                 }
             } catch (err) {
-                errDiv.textContent = 'Error inesperado: ' + err.message;
+                errDiv.textContent = 'Error de red: ' + err.message;
                 errDiv.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
                 btn.innerText = 'ACCEDER A LA TERMINAL →';
             }
-        }
-
-        async function checkSession() {
-            const sb = getClient();
-            if (!sb) return;
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) {
-                document.getElementById('login-view').classList.add('hidden');
-                document.getElementById('app-view').classList.remove('hidden');
-                renderMatrix();
-                renderPairs();
-            } else {
-                document.getElementById('login-view').classList.remove('hidden');
-                document.getElementById('app-view').classList.add('hidden');
-            }
-        }
-
-        async function logout() {
-            const sb = getClient();
-            if (sb) await sb.auth.signOut();
-            checkSession();
         }
 
         function renderMatrix() {
@@ -313,69 +230,28 @@
             const tbody = document.getElementById('pairs-table-body');
             if(!tbody) return;
             tbody.innerHTML = '';
-            
             pairsData.forEach(item => {
                 const [base, quote] = item.pair.split('/');
-                const baseScore = currencies[base] ? currencies[base].score : 5;
-                const quoteScore = currencies[quote] ? currencies[quote].score : 5;
-                const delta = baseScore - quoteScore;
-                
+                const delta = (currencies[base]?.score || 5) - (currencies[quote]?.score || 5);
                 const dir = delta > 0.5 ? 'BUY' : delta < -0.5 ? 'SELL' : 'NEUTRAL';
                 const prob = Math.min(95, Math.max(55, Math.round(50 + Math.abs(delta) * 8)));
                 const risk = prob > 75 ? 'Bajo' : prob > 60 ? 'Medio' : 'Alto';
-                const dirClass = dir === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (dir === 'SELL' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-800 text-slate-400 border-slate-700');
+                const dirClass = dir === 'BUY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900/40 transition-all">
+                    <tr class="hover:bg-slate-900/40">
                         <td class="p-3 font-bold text-white">${item.pair}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${dirClass}">${dir}</span></td>
-                        <td class="p-3 font-mono ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</td>
+                        <td class="p-3 font-mono text-emerald-400">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</td>
                         <td class="p-3 font-mono text-white">${prob}%</td>
                         <td class="p-3 text-slate-400">${risk}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="openModal('${item.pair}', '${dir}', '${item.thesis}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg text-[11px] font-medium transition-all">
-                                Ver Tesis
-                            </button>
-                        </td>
                     </tr>
                 `;
             });
         }
 
-        function triggerScenario(type) {
-            if (type === 'USD_NFP_BULL') { currencies.USD.score = 9.2; currencies.USD.status = 'Muy Fuerte'; }
-            else if (type === 'EUR_CPI_BEAR') { currencies.EUR.score = 1.8; currencies.EUR.status = 'Muy Débil'; }
-            else if (type === 'BOJ_HAWKISH') { currencies.JPY.score = 8.0; currencies.JPY.status = 'Fuerte'; }
-            renderMatrix();
-            renderPairs();
-        }
-
-        function resetScenarios() {
-            currencies = {
-                USD: { score: 7.8, status: 'Fuerte' },
-                EUR: { score: 3.2, status: 'Débil' },
-                GBP: { score: 6.1, status: 'Neutral' },
-                JPY: { score: 2.4, status: 'Muy Débil' },
-                AUD: { score: 5.5, status: 'Neutral' },
-                CAD: { score: 6.8, status: 'Fuerte' },
-                CHF: { score: 4.1, status: 'Débil' },
-                NZD: { score: 4.8, status: 'Neutral' }
-            };
-            renderMatrix();
-            renderPairs();
-        }
-
-        function openModal(pair, dir, thesis) {
-            document.getElementById('modal-pair-title').textContent = pair;
-            const biasEl = document.getElementById('modal-pair-bias');
-            biasEl.textContent = dir;
-            biasEl.className = px-2 py-0.5 rounded text-xs font-bold ${dir === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'};
-            document.getElementById('modal-thesis-text').textContent = thesis;
-            document.getElementById('thesis-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('thesis-modal').classList.add('hidden');
+        function logout() {
+            location.reload();
         }
 
         setInterval(() => {
@@ -386,7 +262,6 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
-            checkSession();
         });
     </script>
 </body>
