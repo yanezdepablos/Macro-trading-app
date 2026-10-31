@@ -54,16 +54,14 @@
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
                     <input type="password" id="password" placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
-                <button type="button" id="btn-login" onclick="handleLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                <button type="button" onclick="bypassLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                     ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </div>
-
-            <div id="login-error" class="hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl text-center font-medium"></div>
         </div>
     </div>
 
-    <!-- TERMINAL PRINCIPAL (MACRO EDGE FX DASHBOARD) -->
+    <!-- TERMINAL PRINCIPAL -->
     <div id="app-view" class="hidden flex-1 flex flex-col">
         <header class="glass-card sticky top-0 z-40 border-b border-cardborder px-6 py-3">
             <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -137,7 +135,7 @@
         </main>
     </div>
 
-    <!-- SCRIPT DE CONTROL -->
+    <!-- SCRIPT -->
     <script>
         let currencies = {
             USD: { score: 7.8, status: 'Fuerte' },
@@ -157,18 +155,7 @@
             { pair: 'USD/CAD', thesis: 'Petróleo moderado.' }
         ];
 
-        function handleLogin() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errDiv = document.getElementById('login-error');
-
-            if (!email || !password) {
-                errDiv.textContent = 'Por favor ingresa correo y contraseña.';
-                errDiv.classList.remove('hidden');
-                return;
-            }
-
-            // Acceso concedido instantáneo con tu diseño de prototipo original
+        function bypassLogin() {
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('app-view').classList.remove('hidden');
             renderMatrix();
