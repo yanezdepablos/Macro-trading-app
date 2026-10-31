@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS avanzados
+# Estilos CSS avanzados con Neón y Glassmorphism de alta gama
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -26,6 +26,27 @@ st.markdown("""
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
         max-width: 100% !important;
+    }
+
+    /* Efectos de Neón */
+    .neon-text {
+        color: #34D399;
+        text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+    }
+    
+    .neon-card {
+        background: rgba(13, 17, 23, 0.85);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        transition: all 0.2s ease;
+    }
+    .neon-card:hover {
+        border-color: rgba(52, 211, 153, 0.4);
+        box-shadow: 0 0 15px rgba(52, 211, 153, 0.2);
     }
 
     /* Botones estilizados */
@@ -78,7 +99,7 @@ if not st.session_state.logged_in:
 header_html = f"""
     <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); padding: 16px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
         <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.3);">M</div>
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
             <div>
                 <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX</span>
                 <span style="font-size: 10px; color: #34D399; font-family: monospace; font-weight: 600; display: flex; align-items: center; gap: 6px;">
@@ -86,7 +107,7 @@ header_html = f"""
                 </span>
             </div>
         </div>
-        <div style="font-family: monospace; font-size: 12px; color: #D1D5DB; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+        <div style="font-family: monospace; font-size: 12px; color: #34D399; background: rgba(52,211,153,0.08); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(52,211,153,0.2); text-shadow: 0 0 8px rgba(52,211,153,0.5);">
             🕒 <b>{datetime.datetime.utcnow().strftime('%H:%M:%S')} UTC</b>
         </div>
         <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
@@ -98,25 +119,26 @@ st.markdown(header_html, unsafe_allow_html=True)
 
 if 'currencies' not in st.session_state:
     st.session_state.currencies = {
-        'USD': {'score': 7.8, 'status': 'Fuerte', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
-        'EUR': {'score': 3.2, 'status': 'Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-        'GBP': {'score': 6.1, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
-        'JPY': {'score': 2.4, 'status': 'Muy Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-        'AUD': {'score': 5.5, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
-        'CAD': {'score': 6.8, 'status': 'Fuerte', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
-        'CHF': {'score': 4.1, 'status': 'Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-        'NZD': {'score': 4.8, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'}
+        'USD': {'score': 7.8, 'status': 'Fuerte', 'flag': '🇺🇸', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
+        'EUR': {'score': 3.2, 'status': 'Débil', 'flag': '🇪🇺', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+        'GBP': {'score': 6.1, 'status': 'Neutral', 'flag': '🇬🇧', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
+        'JPY': {'score': 2.4, 'status': 'Muy Débil', 'flag': '🇯🇵', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+        'AUD': {'score': 5.5, 'status': 'Neutral', 'flag': '🇦🇺', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
+        'CAD': {'score': 6.8, 'status': 'Fuerte', 'flag': '🇨🇦', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
+        'CHF': {'score': 4.1, 'status': 'Débil', 'flag': '🇨🇭', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+        'NZD': {'score': 4.8, 'status': 'Neutral', 'flag': '🇳🇿', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'}
     }
 
-# 1. MATRIZ DE FUERZA DE DIVISAS
+# 1. MATRIZ DE FUERZA DE DIVISAS CON BANDERAS
 st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📊 Matriz de Fuerza de Divisas (Currency Strength Meter)</p>", unsafe_allow_html=True)
 cols = st.columns(8)
 for i, (curr, data) in enumerate(st.session_state.currencies.items()):
     with cols[i]:
         st.markdown(f"""
-            <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 10px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
-                <div style="font-size: 11px; font-weight: 800; color: #9CA3AF; margin-bottom: 6px; letter-spacing: 0.05em;">{curr}</div>
-                <div style="font-size: 22px; font-weight: 900; color: #FFFFFF; margin-bottom: 8px; font-family: monospace;">{data['score']:.1f}</div>
+            <div class="neon-card">
+                <div style="font-size: 14px; margin-bottom: 2px;">{data['flag']}</div>
+                <div style="font-size: 11px; font-weight: 800; color: #9CA3AF; margin-bottom: 4px; letter-spacing: 0.05em;">{curr}</div>
+                <div style="font-size: 20px; font-weight: 900; color: #FFFFFF; margin-bottom: 6px; font-family: monospace;">{data['score']:.1f}</div>
                 <div style="font-size: 9px; font-weight: 700; color: {data['color']}; background: {data['bg']}; padding: 3px 6px; border-radius: 6px; display: inline-block; border: 1px solid {data['color']}33;">{data['status']}</div>
             </div>
         """, unsafe_allow_html=True)
@@ -154,33 +176,37 @@ with scen_col3:
 with scen_col4:
     if st.button("🔄 Restablecer Escenarios", use_container_width=True):
         st.session_state.currencies = {
-            'USD': {'score': 7.8, 'status': 'Fuerte', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
-            'EUR': {'score': 3.2, 'status': 'Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-            'GBP': {'score': 6.1, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
-            'JPY': {'score': 2.4, 'status': 'Muy Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-            'AUD': {'score': 5.5, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
-            'CAD': {'score': 6.8, 'status': 'Fuerte', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
-            'CHF': {'score': 4.1, 'status': 'Débil', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
-            'NZD': {'score': 4.8, 'status': 'Neutral', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'}
+            'USD': {'score': 7.8, 'status': 'Fuerte', 'flag': '🇺🇸', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
+            'EUR': {'score': 3.2, 'status': 'Débil', 'flag': '🇪🇺', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+            'GBP': {'score': 6.1, 'status': 'Neutral', 'flag': '🇬🇧', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
+            'JPY': {'score': 2.4, 'status': 'Muy Débil', 'flag': '🇯🇵', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+            'AUD': {'score': 5.5, 'status': 'Neutral', 'flag': '🇦🇺', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'},
+            'CAD': {'score': 6.8, 'status': 'Fuerte', 'flag': '🇨🇦', 'color': '#34D399', 'bg': 'rgba(52, 211, 153, 0.1)'},
+            'CHF': {'score': 4.1, 'status': 'Débil', 'flag': '🇨🇭', 'color': '#EF4444', 'bg': 'rgba(239, 68, 68, 0.1)'},
+            'NZD': {'score': 4.8, 'status': 'Neutral', 'flag': '🇳🇿', 'color': '#FBBF24', 'bg': 'rgba(251, 191, 36, 0.1)'}
         }
         st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 3. RANKING DE PARES MACRO (TARJETAS DE CRISTAL INTERACTIVAS)
-st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking de Pares Macro (Delta Divergencia)</p>", unsafe_allow_html=True)
+# 3. RANKING DE PARES MACRO (TODOS LOS CRUCES PRINCIPALES Y CRUZADOS)
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Completo de Pares Macro (Delta Divergencia)</p>", unsafe_allow_html=True)
 
 pairs_raw = [
-    ("USD/JPY", "Fuerte divergencia de política monetaria entre la Reserva Federal (Hawkish) y el Banco de Japón (Dovish)."),
-    ("EUR/USD", "Debilitamiento macroeconómico persistente en la Eurozona con registros de CPI a la baja."),
-    ("GBP/USD", "Consolidación lateral en la libra esterlina. El Banco de Inglaterra mantiene tipos moderados."),
-    ("USD/CAD", "Precios del petróleo estables apoyan la fortaleza estructural del USD frente al CAD."),
-    ("AUD/USD", "Exposición directa al ciclo de materias primas de China en rango neutral."),
-    ("EUR/GBP", "Cruce estructural reflejando divergencia entre el bloque europeo y la resiliencia británica.")
+    ("USD/JPY", "🇺🇸/🇯🇵", "Fuerte divergencia de política monetaria entre la Reserva Federal (Hawkish) y el Banco de Japón (Dovish)."),
+    ("EUR/USD", "🇪🇺/🇺🇸", "Debilitamiento macroeconómico persistente en la Eurozona con registros de CPI a la baja frente al dólar."),
+    ("GBP/USD", "🇬🇧/🇺🇸", "Consolidación lateral en la libra esterlina. El Banco de Inglaterra mantiene tipos moderados."),
+    ("USD/CAD", "🇺🇸/🇨🇦", "Precios del petróleo estables apoyan la fortaleza estructural del USD frente al CAD."),
+    ("AUD/USD", "🇦🇺/🇺🇸", "Exposición directa al ciclo de materias primas de China en rango neutral frente al billete verde."),
+    ("EUR/GBP", "🇪🇺/🇬🇧", "Cruce estructural reflejando divergencia entre el bloque europeo y la resiliencia británica."),
+    ("NZD/USD", "🇳🇿/🇺🇸", "Crecimiento moderado en Nueva Zelanda con flujos de leche en niveles estacionales."),
+    ("USD/CHF", "🇺🇸/🇨🇭", "Busqueda de refugio seguro equilibrada con los diferenciales de tipos de la SNB y la Fed."),
+    ("EUR/JPY", "🇪🇺/🇯🇵", "Divergencia entre los estímulos europeos y la salida de tipos negativos en Japón."),
+    ("GBP/JPY", "🇬🇧/🇯🇵", "Alta volatilidad en el carry trade por expectativas de intervención en el par cruzado.")
 ]
 
 table_data = []
-for pair, thesis in pairs_raw:
+for pair, flags, thesis in pairs_raw:
     base, quote = pair.split('/')
     b_score = st.session_state.currencies[base]['score']
     q_score = st.session_state.currencies[quote]['score']
@@ -194,6 +220,7 @@ for pair, thesis in pairs_raw:
     
     table_data.append({
         "Pair": pair,
+        "Flags": flags,
         "Dir": direction,
         "DirColor": dir_color,
         "Delta": round(delta, 1),
@@ -205,22 +232,25 @@ for pair, thesis in pairs_raw:
 
 table_data = sorted(table_data, key=lambda x: abs(x['Delta']), reverse=True)
 
-# Renderizar cada fila como una tarjeta limpia con diseño glassmorphism
+# Renderizar cada par como tarjeta interactiva con banderas y neón
 for row in table_data:
     st.markdown(f"""
         <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <div style="font-weight: 800; color: #FFFFFF; font-family: monospace; font-size: 14px; width: 100px;">{row['Pair']}</div>
-            <div><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {row['DirColor']}33; font-size: 11px;">{row['Dir']}</span></div>
-            <div style="font-family: monospace; font-weight: 700; color: #E5E7EB; font-size: 13px;">Delta: {row['Delta']:+.1f}</div>
+            <div style="display: flex; align-items: center; gap: 10px; width: 140px;">
+                <span style="font-size: 16px;">{row['Flags']}</span>
+                <span style="font-weight: 800; color: #FFFFFF; font-family: monospace; font-size: 14px;">{row['Pair']}</span>
+            </div>
+            <div><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {row['DirColor']}33; font-size: 11px; text-shadow: 0 0 8px {row['DirColor']}66;">{row['Dir']}</span></div>
+            <div style="font-family: monospace; font-weight: 700; color: #E5E7EB; font-size: 13px;">Delta: <span class="neon-text">{row['Delta']:+.1f}</span></div>
             <div style="font-family: monospace; color: #9CA3AF; font-size: 13px;">Prob: {row['Prob']}</div>
             <div><span style="color: {row['RiskColor']}; font-weight: 700; font-size: 12px;">Riesgo: {row['Risk']}</span></div>
         </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
-selected_pair = st.selectbox("Selecciona un par para ver su Tesis Fundamental Algorítmica:", [r['Pair'] for r in table_data])
+selected_pair = st.selectbox("🔍 Selecciona un par para ver su Tesis Fundamental Algorítmica detallada:", [r['Pair'] for r in table_data])
 selected_thesis = next(r['Thesis'] for r in table_data if r['Pair'] == selected_pair)
-st.info(f"*Tesis para {selected_pair}:* {selected_thesis}")
+st.info(f"*Tesis Institucional para {selected_pair}:* {selected_thesis}")
 
 # 4. FEED DE NOTICIAS MACRO
 st.markdown("<br>", unsafe_allow_html=True)
@@ -229,10 +259,10 @@ f_col1, f_col2, f_col3 = st.columns(3)
 
 with f_col1:
     st.markdown("""
-        <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+        <div class="neon-card" style="text-align: left;">
             <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: #9CA3AF; margin-bottom: 8px;">
-                <span>USD • NFP Employment</span>
-                <span style="color: #34D399; font-weight: bold;">+2.4 SD</span>
+                <span>🇺🇸 USD • NFP Employment</span>
+                <span class="neon-text" style="font-weight: bold;">+2.4 SD</span>
             </div>
             <p style="font-size: 12px; color: #D1D5DB; margin: 0; line-height: 1.4;">Creación de empleo por encima del consenso. Mantiene presión restrictiva en la Fed.</p>
         </div>
@@ -240,10 +270,10 @@ with f_col1:
 
 with f_col2:
     st.markdown("""
-        <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+        <div class="neon-card" style="text-align: left;">
             <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: #9CA3AF; margin-bottom: 8px;">
-                <span>EUR • CPI Flash YoY</span>
-                <span style="color: #EF4444; font-weight: bold;">-1.8 SD</span>
+                <span>🇪🇺 EUR • CPI Flash YoY</span>
+                <span style="color: #EF4444; font-weight: bold; text-shadow: 0 0 8px rgba(239,68,68,0.6);">-1.8 SD</span>
             </div>
             <p style="font-size: 12px; color: #D1D5DB; margin: 0; line-height: 1.4;">Desaceleración inflacionaria mayor a la prevista. Incrementa presión sobre el BCE.</p>
         </div>
@@ -251,10 +281,10 @@ with f_col2:
 
 with f_col3:
     st.markdown("""
-        <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+        <div class="neon-card" style="text-align: left;">
             <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: #9CA3AF; margin-bottom: 8px;">
-                <span>JPY • BoJ Rate Decision</span>
-                <span style="color: #34D399; font-weight: bold;">+2.1 SD</span>
+                <span>🇯🇵 JPY • BoJ Rate Decision</span>
+                <span class="neon-text" style="font-weight: bold;">+2.1 SD</span>
             </div>
             <p style="font-size: 12px; color: #D1D5DB; margin: 0; line-height: 1.4;">Giro hacia la normalización monetaria, reduciendo atractivo del carry trade.</p>
         </div>
