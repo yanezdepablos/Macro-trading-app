@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS avanzados: Replicando el diseño web puro del prototipo original
+# Estilos CSS avanzados
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -26,40 +26,6 @@ st.markdown("""
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;
         max-width: 100% !important;
-    }
-    
-    /* Tabla de Ranking Personalizada en HTML puro */
-    .custom-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: rgba(13, 17, 23, 0.75);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        overflow: hidden;
-        font-size: 13px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .custom-table th {
-        background: rgba(22, 27, 34, 0.9);
-        color: #9CA3AF;
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        padding: 14px 18px;
-        text-align: left;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .custom-table td {
-        padding: 14px 18px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        color: #E5E7EB;
-    }
-    .custom-table tr:last-child td {
-        border-bottom: none;
-    }
-    .custom-table tr:hover {
-        background: rgba(255, 255, 255, 0.02);
     }
 
     /* Botones estilizados */
@@ -201,7 +167,7 @@ with scen_col4:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 3. RANKING DE PARES MACRO (TABLA HTML PURA IDÉNTICA AL PROTOTIPO)
+# 3. RANKING DE PARES MACRO (TARJETAS DE CRISTAL INTERACTIVAS)
 st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking de Pares Macro (Delta Divergencia)</p>", unsafe_allow_html=True)
 
 pairs_raw = [
@@ -239,34 +205,17 @@ for pair, thesis in pairs_raw:
 
 table_data = sorted(table_data, key=lambda x: abs(x['Delta']), reverse=True)
 
-rows_html = ""
+# Renderizar cada fila como una tarjeta limpia con diseño glassmorphism
 for row in table_data:
-    rows_html += f"""
-        <tr>
-            <td style="font-weight: 700; color: #FFFFFF; font-family: monospace;">{row['Pair']}</td>
-            <td><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 3px 8px; border-radius: 6px; border: 1px solid {row['DirColor']}33;">{row['Dir']}</span></td>
-            <td style="font-family: monospace; font-weight: 700;">{row['Delta']:+.1f}</td>
-            <td style="font-family: monospace;">{row['Prob']}</td>
-            <td><span style="color: {row['RiskColor']}; font-weight: 700;">{row['Risk']}</span></td>
-        </tr>
-    """
-
-st.markdown(f"""
-    <table class="custom-table">
-        <thead>
-            <tr>
-                <th>Par</th>
-                <th>Dirección</th>
-                <th>Delta Macro</th>
-                <th>Probabilidad</th>
-                <th>Riesgo</th>
-            </tr>
-        </thead>
-        <tbody>
-            {rows_html}
-        </tbody>
-    </table>
-""", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div style="font-weight: 800; color: #FFFFFF; font-family: monospace; font-size: 14px; width: 100px;">{row['Pair']}</div>
+            <div><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {row['DirColor']}33; font-size: 11px;">{row['Dir']}</span></div>
+            <div style="font-family: monospace; font-weight: 700; color: #E5E7EB; font-size: 13px;">Delta: {row['Delta']:+.1f}</div>
+            <div style="font-family: monospace; color: #9CA3AF; font-size: 13px;">Prob: {row['Prob']}</div>
+            <div><span style="color: {row['RiskColor']}; font-weight: 700; font-size: 12px;">Riesgo: {row['Risk']}</span></div>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 selected_pair = st.selectbox("Selecciona un par para ver su Tesis Fundamental Algorítmica:", [r['Pair'] for r in table_data])
