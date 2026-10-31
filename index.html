@@ -34,7 +34,7 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
-    <!-- TERMINAL PRINCIPAL (CARGA DIRECTA) -->
+    <!-- TERMINAL PRINCIPAL -->
     <div id="app-view" class="flex-1 flex flex-col">
         
         <!-- HEADER ESTILO TERMINAL FINANCIERA -->
@@ -187,7 +187,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- SCRIPT DE EJECUCIÓN INMEDIATA -->
     <script>
         let currencies = {
             USD: { score: 7.8, status: 'Fuerte' },
@@ -317,7 +317,7 @@
             document.getElementById('thesis-modal').classList.add('hidden');
         }
 
-        setInterval(() => {
+        function updateClock() {
             const now = new Date();
             const utcHours = now.getUTCHours();
             const clockEl = document.getElementById('utc-clock');
@@ -336,12 +336,16 @@
             setDot('session-london', londonActive);
             setDot('session-ny', nyActive);
             setDot('session-tokyo', tokyoActive);
-        }, 1000);
+        }
 
+        setInterval(updateClock, 1000);
+
+        // Inicialización inmediata al cargar el script
         window.addEventListener('DOMContentLoaded', () => {
             if (window.lucide) lucide.createIcons();
             renderMatrix();
             renderPairs();
+            updateClock();
         });
     </script>
 </body>
