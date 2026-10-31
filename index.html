@@ -90,7 +90,7 @@
                 </div>
 
                 <div>
-                    <button onclick="logout()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg border border-cardborder transition-all flex items-center gap-1.5">
+                    <button onclick="logout()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg border border-cardborder transition-all flex items-center gap-1.5 cursor-pointer">
                         <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Salir
                     </button>
                 </div>
@@ -119,22 +119,22 @@
                     <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">RECALCULA EN TIEMPO REAL</span>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="triggerScenario('USD_NFP')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                    <button onclick="triggerScenario('USD_NFP')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5 cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span> USD NFP Supera Expectativas
                     </button>
-                    <button onclick="triggerScenario('EUR_CPI')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                    <button onclick="triggerScenario('EUR_CPI')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5 cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-red-500"></span> EUR CPI Caída Fuerte
                     </button>
-                    <button onclick="triggerScenario('BOJ_RATE')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5">
+                    <button onclick="triggerScenario('BOJ_RATE')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs rounded-xl border border-cardborder transition-all flex items-center gap-1.5 cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span> BoJ Subida de Tipos (+25bps)
                     </button>
-                    <button onclick="resetScenarios()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-xl border border-cardborder transition-all ml-auto">
+                    <button onclick="resetScenarios()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-xl border border-cardborder transition-all ml-auto cursor-pointer">
                         Restablecer
                     </button>
                 </div>
             </section>
 
-            <!-- 3. TABLA DE POSICIONES Y RANKING DE PARES (CON BUSCADOR Y FILTROS) -->
+            <!-- 3. TABLA DE POSICIONES Y RANKING DE PARES -->
             <section class="glass-card rounded-2xl border border-cardborder overflow-hidden">
                 <div class="p-4 border-b border-cardborder flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -163,12 +163,12 @@
                 </div>
             </section>
 
-            <!-- 5. FEED MACRO Y CALENDARIO FOREX FACTORY -->
+            <!-- 5. FEED MACRO -->
             <section class="glass-card rounded-2xl p-4 border border-cardborder">
                 <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
                     <i data-lucide="rss" class="w-4 h-4 text-emerald-400"></i> FEED DE NOTICIAS MACRO Y DESVIACIÓN ESTÁNDAR (SD)
                 </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" id="macro-feed">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                     <div class="bg-slate-900/60 p-3 rounded-xl border border-cardborder">
                         <div class="flex justify-between items-center mb-1 text-slate-400 font-mono">
                             <span>USD • NFP Employment</span>
@@ -196,7 +196,7 @@
         </main>
     </div>
 
-    <!-- MODAL DE TESIS FUNDAMENTAL ALGORÍTMICA -->
+    <!-- MODAL DE TESIS FUNDAMENTAL -->
     <div id="thesis-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
         <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-cardborder space-y-4">
             <div class="flex items-center justify-between border-b border-cardborder pb-3">
@@ -216,7 +216,7 @@
         </div>
     </div>
 
-    <!-- LÓGICA DE JAVASCRIPT DEL PROTOTIPO ORIGINAL -->
+    <!-- SCRIPT -->
     <script>
         let currencies = {
             USD: { score: 7.8, status: 'Fuerte' },
@@ -234,7 +234,7 @@
             { pair: 'EUR/USD', thesis: 'Debilitamiento macroeconómico persistente en la Eurozona con registros de CPI a la baja. Fortaleza relativa del dólar respaldada por datos sólidos de empleo.' },
             { pair: 'GBP/USD', thesis: 'Consolidación lateral en la libra esterlina. El Banco de Inglaterra mantiene tipos elevados pero los indicadores de crecimiento se moderan.' },
             { pair: 'USD/CAD', thesis: 'Precios del petróleo moderados apoyan la fortaleza estructural del USD frente al CAD en el corto plazo.' },
-            { AUD: 'AUD/USD', pair: 'AUD/USD', thesis: 'Exposición directa al ciclo de materias primas de China. Recuperación lenta que mantiene al dólar australiano en rango neutral.' },
+            { pair: 'AUD/USD', thesis: 'Exposición directa al ciclo de materias primas de China. Recuperación lenta que mantiene al dólar australiano en rango neutral.' },
             { pair: 'EUR/GBP', thesis: 'Cruce cruzado reflejando la divergencia entre la debilidad del bloque europeo frente a la resiliencia británica.' }
         ];
 
@@ -277,7 +277,6 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             
-            // Ordenar por delta macro (absoluto de divergencia de mayor a menor)
             const processedPairs = pairsData.map(item => {
                 const [base, quote] = item.pair.split('/');
                 const baseScore = currencies[base]?.score || 5;
@@ -359,14 +358,12 @@
             document.getElementById('thesis-modal').classList.add('hidden');
         }
 
-        // Reloj UTC y Sesiones Globales Dinámicas
         setInterval(() => {
             const now = new Date();
             const utcHours = now.getUTCHours();
             const clockEl = document.getElementById('utc-clock');
             if(clockEl) clockEl.textContent = now.toUTCString().split(' ')[4] + ' UTC';
 
-            // Activar sesiones según hora UTC
             const londonActive = utcHours >= 7 && utcHours < 16;
             const nyActive = utcHours >= 12 && utcHours < 21;
             const tokyoActive = utcHours >= 0 && utcHours < 9;
