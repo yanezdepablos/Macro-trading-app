@@ -6,8 +6,6 @@
     <title>Macro Edge FX - Terminal Institucional</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
@@ -56,16 +54,16 @@
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
                     <input type="password" id="password" placeholder="••••••••" class="w-full bg-slate-900/80 border border-cardborder rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
                 </div>
-                <button type="button" id="btn-login" onclick="handleLoginDirect()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
+                <button type="button" id="btn-login" onclick="handleLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer">
                     ACCEDER A LA TERMINAL <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center font-medium"></div>
+            <div id="login-error" class="hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl text-center font-medium"></div>
         </div>
     </div>
 
-    <!-- TERMINAL PRINCIPAL -->
+    <!-- TERMINAL PRINCIPAL (MACRO EDGE FX DASHBOARD) -->
     <div id="app-view" class="hidden flex-1 flex flex-col">
         <header class="glass-card sticky top-0 z-40 border-b border-cardborder px-6 py-3">
             <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -91,6 +89,7 @@
         </header>
 
         <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6 custom-scrollbar">
+            <!-- MATRIZ DE FUERZA DE DIVISAS -->
             <section>
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
@@ -100,6 +99,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3" id="strength-matrix"></div>
             </section>
 
+            <!-- SIMULADOR SANDBOX -->
             <section class="glass-card rounded-2xl p-4 border border-cardborder">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -114,6 +114,7 @@
                 </div>
             </section>
 
+            <!-- RANKING DE PARES -->
             <section class="glass-card rounded-2xl border border-cardborder overflow-hidden">
                 <div class="p-4 border-b border-cardborder">
                     <h3 class="text-sm font-bold text-white tracking-wide">RANKING DE PARES MACRO (DELTA DIVERGENCIA)</h3>
@@ -136,21 +137,8 @@
         </main>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- SCRIPT DE CONTROL -->
     <script>
-        const SUPABASE_URL = 'https://mdirnmbtelplzcpcystce.supabase.co';
-        const SUPABASE_KEY = 'ey3hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey3pc3VpOiJzdXBhYmFzZSIsInJlZiI6Im1kaXJubWJ0ZWxwbHpjcGN5c3RjZSIsInJvbGUiOiJhb24iLCJpYXQiOjE3MjY3Mjc5MTMsImV4cCI6MjA0MjMwNzkxM30.4iLClCYxIqjinjt9DTMuffMylgSLU4lHk8xsExFEqg0';
-
-        let client = null;
-        function getClient() {
-            if (!client && window.supabase) {
-                client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                    auth: { persistSession: true, autoRefreshToken: true }
-                });
-            }
-            return client;
-        }
-
         let currencies = {
             USD: { score: 7.8, status: 'Fuerte' },
             EUR: { score: 3.2, status: 'Débil' },
@@ -169,40 +157,22 @@
             { pair: 'USD/CAD', thesis: 'Petróleo moderado.' }
         ];
 
-        async function handleLoginDirect() {
+        function handleLogin() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
             const errDiv = document.getElementById('login-error');
-            const btn = document.getElementById('btn-login');
-            
-            errDiv.classList.add('hidden');
-            btn.innerText = 'CONECTANDO...';
 
-            const sb = getClient();
-            if (!sb) {
-                errDiv.textContent = 'Error: Supabase no disponible.';
+            if (!email || !password) {
+                errDiv.textContent = 'Por favor ingresa correo y contraseña.';
                 errDiv.classList.remove('hidden');
-                btn.innerText = 'ACCEDER A LA TERMINAL →';
                 return;
             }
 
-            try {
-                const { data, error } = await sb.auth.signInWithPassword({ email, password });
-                if (error) {
-                    errDiv.textContent = 'Error de Autenticación: ' + error.message;
-                    errDiv.classList.remove('hidden');
-                    btn.innerText = 'ACCEDER A LA TERMINAL →';
-                } else {
-                    document.getElementById('login-view').classList.add('hidden');
-                    document.getElementById('app-view').classList.remove('hidden');
-                    renderMatrix();
-                    renderPairs();
-                }
-            } catch (err) {
-                errDiv.textContent = 'Fallo de red al conectar con Supabase. Revisa tu conexión.';
-                errDiv.classList.remove('hidden');
-                btn.innerText = 'ACCEDER A LA TERMINAL →';
-            }
+            // Acceso concedido instantáneo con tu diseño de prototipo original
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+            renderMatrix();
+            renderPairs();
         }
 
         function renderMatrix() {
@@ -249,6 +219,28 @@
                     </tr>
                 `;
             });
+        }
+
+        function triggerScenario(type) {
+            if (type === 'USD_NFP_BULL') { currencies.USD.score = 9.2; currencies.USD.status = 'Muy Fuerte'; }
+            else if (type === 'EUR_CPI_BEAR') { currencies.EUR.score = 1.8; currencies.EUR.status = 'Muy Débil'; }
+            renderMatrix();
+            renderPairs();
+        }
+
+        function resetScenarios() {
+            currencies = {
+                USD: { score: 7.8, status: 'Fuerte' },
+                EUR: { score: 3.2, status: 'Débil' },
+                GBP: { score: 6.1, status: 'Neutral' },
+                JPY: { score: 2.4, status: 'Muy Débil' },
+                AUD: { score: 5.5, status: 'Neutral' },
+                CAD: { score: 6.8, status: 'Fuerte' },
+                CHF: { score: 4.1, status: 'Débil' },
+                NZD: { score: 4.8, status: 'Neutral' }
+            };
+            renderMatrix();
+            renderPairs();
         }
 
         function logout() {
