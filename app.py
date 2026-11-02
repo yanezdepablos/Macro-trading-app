@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import pandas as pd
 import time
+import streamlit.components.v1 as components
 
 # Configuración de la página institucional
 st.set_page_config(
@@ -106,8 +107,8 @@ if not st.session_state.logged_in:
 
 # --- TERMINAL PRINCIPAL DE MACRO TRADING ---
 
-# Header profesional con Reloj UTC sincronizado de forma robusta por JS
-header_html = """
+# Header superior institucional con diseño flexbox y usuario corporativo
+header_top_html = """
     <div style="background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); padding: 18px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
@@ -118,30 +119,58 @@ header_html = """
                 </span>
             </div>
         </div>
-        <div style="font-family: monospace; font-size: 13px; color: #34D399; background: rgba(52,211,153,0.08); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(52,211,153,0.2); text-shadow: 0 0 8px rgba(52,211,153,0.5);">
-            🕒 <span id="live-utc-clock">00:00:00</span> UTC
-        </div>
         <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
             👤 yanezdepablos
         </div>
     </div>
-    <script>
-        (function() {
-            function updateClock() {
-                const now = new Date();
-                const utc = now.toUTCString().split(' ')[4];
-                const el = document.getElementById('live-utc-clock');
-                if (el) {
-                    el.innerText = utc;
-                }
-            }
-            if (window.utcInterval) clearInterval(window.utcInterval);
-            window.utcInterval = setInterval(updateClock, 1000);
-            updateClock();
-        })();
-    </script>
 """
-st.markdown(header_html, unsafe_allow_html=True)
+st.markdown(header_top_html, unsafe_allow_html=True)
+
+# Componente nativo dedicado exclusivamente para el Reloj UTC en vivo (evita congelamientos)
+clock_component_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            background-color: transparent;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .clock-box {
+            font-family: monospace;
+            font-size: 14px;
+            color: #34D399;
+            background: rgba(52,211,153,0.08);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(52,211,153,0.2);
+            text-shadow: 0 0 8px rgba(52,211,153,0.5);
+            letter-spacing: 0.05em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-box" id="utc-clock">🕒 Sincronizando UTC...</div>
+    <script>
+        function updateUTC() {
+            const now = new Date();
+            const utcString = now.toUTCString().split(' ')[4];
+            document.getElementById('utc-clock').innerText = "🕒 " + utcString + " UTC";
+        }
+        setInterval(updateUTC, 1000);
+        updateUTC();
+    </script>
+</body>
+</html>
+"""
+components.html(clock_component_html, height=50)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 if 'currencies' not in st.session_state:
     st.session_state.currencies = {
