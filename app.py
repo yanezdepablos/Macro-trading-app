@@ -2,8 +2,6 @@ import streamlit as st
 import datetime
 import pandas as pd
 import time
-import urllib.request
-import xml.etree.ElementTree as ET
 
 # Configuración de la página institucional
 st.set_page_config(
@@ -69,10 +67,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE DATOS NATIVO (Cero dependencias externas para evitar errores) ---
+# --- MOTOR DE DATOS NATIVO (Estabilidad garantizada) ---
 @st.cache_data(ttl=60)
 def fetch_native_macro_news():
-    """Recopila datos macro utilizando librerías nativas de Python para máxima estabilidad."""
     items = [
         {"source": "Forex Factory / Reuters", "title": "🇺🇸 USD • NFP Employment Data Verified", "sd": "+2.4 SD", "color": "#34D399", "summary": "Creación de empleo supera consenso en múltiples fuentes. Sesgo Hawkish confirmado."},
         {"source": "DailyFX / Bloomberg", "title": "🇪🇺 EUR • CPI Flash YoY Consensus", "sd": "-1.8 SD", "color": "#EF4444", "summary": "Desaceleración inflacionaria mayor a la prevista confirmada por BCE y Eurostat."},
@@ -80,7 +77,7 @@ def fetch_native_macro_news():
     ]
     return items
 
-# --- SISTEMA DE AUTENTICACIÓN ---
+# --- SISTEMA DE AUTENTICACIÓN (Usuario: yanezdepablos) ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
@@ -96,7 +93,7 @@ if not st.session_state.logged_in:
             </div>
         """, unsafe_allow_html=True)
         
-        st.text_input("Correo Electrónico", value="yanezdepablos", disabled=True)
+        st.text_input("Usuario", value="yanezdepablos", disabled=True)
         pass_input = st.text_input("Contraseña de Acceso", type="password", placeholder="Introduce la contraseña...")
         
         if st.button("ACCEDER A LA TERMINAL", use_container_width=True):
@@ -109,7 +106,8 @@ if not st.session_state.logged_in:
 
 # --- TERMINAL PRINCIPAL DE MACRO TRADING ---
 
-header_html = f"""
+# Header profesional con Reloj UTC sincronizado de forma robusta por JS
+header_html = """
     <div style="background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); padding: 18px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
@@ -121,23 +119,26 @@ header_html = f"""
             </div>
         </div>
         <div style="font-family: monospace; font-size: 13px; color: #34D399; background: rgba(52,211,153,0.08); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(52,211,153,0.2); text-shadow: 0 0 8px rgba(52,211,153,0.5);">
-            🕒 <span id="utc-clock">Cargando reloj...</span> UTC
+            🕒 <span id="live-utc-clock">00:00:00</span> UTC
         </div>
-        <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
-            yanezdepablos6@gmail.com
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+            👤 yanezdepablos
         </div>
     </div>
     <script>
-        function updateUTC() {{
-            const now = new Date();
-            const utcString = now.toUTCString().split(' ')[4];
-            const clockEl = document.getElementById('utc-clock');
-            if (clockEl) {{
-                clockEl.innerText = utcString;
-            }}
-        }}
-        setInterval(updateUTC, 1000);
-        updateUTC();
+        (function() {
+            function updateClock() {
+                const now = new Date();
+                const utc = now.toUTCString().split(' ')[4];
+                const el = document.getElementById('live-utc-clock');
+                if (el) {
+                    el.innerText = utc;
+                }
+            }
+            if (window.utcInterval) clearInterval(window.utcInterval);
+            window.utcInterval = setInterval(updateClock, 1000);
+            updateClock();
+        })();
     </script>
 """
 st.markdown(header_html, unsafe_allow_html=True)
