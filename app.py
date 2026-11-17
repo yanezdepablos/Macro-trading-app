@@ -14,14 +14,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS limpios, minimalistas y optimizados para móvil (con parche para el badge flotante)
+# Estilos CSS limpios y optimizados
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    .viewerBadge_container__1QSob {display: none !important;}
-    div[data-testid="stStatusWidget"] {visibility: hidden !important;}
     
     .stApp {
         background-color: #07090E;
@@ -31,7 +29,7 @@ st.markdown("""
     
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 3rem !important;
+        padding-bottom: 4rem !important;
         max-width: 100% !important;
     }
 
@@ -359,23 +357,24 @@ for pair, region, thesis in pairs_raw:
 
 table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
 
+# Limpieza absoluta de símbolos extra o triángulo en el Delta
 for r in table_data:
     st.markdown(f"""
         <div style="background: rgba(13, 17, 23, 0.9); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="width: 140px;">
+            <div style="width: 130px;">
                 <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
                 <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
             </div>
             <div>
                 <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
             </div>
-            <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
-                Δ: <span class="neon-glow">{r['Delta']:+.1f}</span>
-            </div>
             <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold;">
                 {r['Prob']}
             </div>
-            <div>
+            <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
+                Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
+            </div>
+            <div style="width: 45px; text-align: right;">
                 <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
             </div>
         </div>
