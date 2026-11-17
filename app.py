@@ -9,7 +9,7 @@ import email.utils
 
 # Configuración de la página institucional
 st.set_page_config(
-    page_title="Macro Edge FX — Terminal Institucional",
+    page_title="Macro Edge FX — Terminal Multiactivo por Categorías",
     page_icon="⚡",
     layout="wide"
 )
@@ -48,14 +48,14 @@ st.markdown("""
     }
 
     .section-header {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 800;
-        color: #9CA3AF;
+        color: #34D399;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        margin-top: 24px;
+        margin-top: 28px;
         margin-bottom: 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(52, 211, 153, 0.3);
         padding-bottom: 6px;
     }
 
@@ -310,79 +310,99 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- RANKING DE PARES ---
-st.markdown('<div class="section-header">🏆 Ranking Direccional de Activos (Probabilidad Descendente)</div>', unsafe_allow_html=True)
+# --- FUNCIÓN PARA CONSTRUIR CADA TABLA DE RANKING POR CATEGORÍA ---
+def render_category_ranking(category_title, pairs_list):
+    st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
+    
+    table_data = []
+    for pair, region, thesis in pairs_list:
+        b, q = pair.split('/')
+        b_score = assets_data.get(b, {'score': 5.0})['score']
+        q_score = assets_data.get(q, {'score': 5.0})['score']
+        delta = b_score - q_score
+        
+        if delta > 0.25:
+            direction = "COMPRAR"
+            dir_color = "#34D399"
+        elif delta < -0.25:
+            direction = "VENDER"
+            dir_color = "#EF4444"
+        else:
+            direction = "NEUTRAL"
+            dir_color = "#FBBF24"
+            
+        prob = int(min(95, max(51, 50 + abs(delta) * 12)))
+        risk = "Alto" if abs(delta) > 3.0 else ("Bajo" if prob > 70 else "Medio")
+        risk_color = "#EF4444" if abs(delta) > 3.0 else ("#34D399" if prob > 70 else "#FBBF24")
+        
+        table_data.append({
+            "Pair": pair, "Region": region, "Dir": direction, "Color": dir_color,
+            "Delta": round(delta, 1), "ProbVal": prob, "Prob": f"{prob}%",
+            "Risk": risk, "RiskColor": risk_color, "Thesis": thesis
+        })
+    
+    # Ordenar estrictamente de mayor a menor probabilidad dentro de su categoría
+    table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
+    
+    for r in table_data:
+        st.markdown(f"""
+            <div style="background: rgba(13, 17, 23, 0.9); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="width: 130px;">
+                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
+                </div>
+                <div>
+                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                </div>
+                <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold;">
+                    {r['Prob']}
+                </div>
+                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
+                    Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
+                </div>
+                <div style="width: 45px; text-align: right;">
+                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-pairs_raw = [
-    ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Refugio institucional y tasas reales."),
-    ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo y flujos ETF."),
-    ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Liquidez de criptoactivos."),
-    ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y metales preciosos."),
-    ("OIL/USD", "ENERGY/USA", "Petróleo vs Dólar: Geopolítica y oferta global."),
+# 1. Tabla de Ranking para Divisas
+forex_pairs = [
     ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
     ("GBP/USD", "GBR/USA", "Libra vs Dólar: Empleo e inflación británica."),
     ("USD/JPY", "USA/JPN", "Dólar vs Yen: Divergencia de tipos Fed vs BoJ."),
     ("AUD/USD", "AUS/USA", "Australiano vs Dólar: Materias primas y demanda asiática."),
     ("USD/CAD", "USA/CAN", "Dólar vs Canadiense: Correlación petrolera."),
-    ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento bursátil global."),
     ("EUR/GBP", "EUR/GBR", "Cruce estructural europeo.")
 ]
+render_category_ranking("Divisas", forex_pairs)
 
-table_data = []
-for pair, region, thesis in pairs_raw:
-    b, q = pair.split('/')
-    b_score = assets_data.get(b, {'score': 5.0})['score']
-    q_score = assets_data.get(q, {'score': 5.0})['score']
-    delta = b_score - q_score
-    
-    if delta > 0.25:
-        direction = "COMPRAR"
-        dir_color = "#34D399"
-    elif delta < -0.25:
-        direction = "VENDER"
-        dir_color = "#EF4444"
-    else:
-        direction = "NEUTRAL"
-        dir_color = "#FBBF24"
-        
-    prob = int(min(95, max(51, 50 + abs(delta) * 12)))
-    risk = "Alto" if abs(delta) > 3.0 else ("Bajo" if prob > 70 else "Medio")
-    risk_color = "#EF4444" if abs(delta) > 3.0 else ("#34D399" if prob > 70 else "#FBBF24")
-    
-    table_data.append({
-        "Pair": pair, "Region": region, "Dir": direction, "Color": dir_color,
-        "Delta": round(delta, 1), "ProbVal": prob, "Prob": f"{prob}%",
-        "Risk": risk, "RiskColor": risk_color, "Thesis": thesis
-    })
+# 2. Tabla de Ranking para Metales y Energía
+metals_energy_pairs = [
+    ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Refugio institucional y tasas reales."),
+    ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y metales preciosos."),
+    ("OIL/USD", "ENERGY/USA", "Petróleo vs Dólar: Geopolítica y oferta global.")
+]
+render_category_ranking("Metales y Materias Primas", metals_energy_pairs)
 
-table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
+# 3. Tabla de Ranking para Criptomonedas
+crypto_pairs = [
+    ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo y flujos ETF."),
+    ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Liquidez de criptoactivos.")
+]
+render_category_ranking("Criptomonedas", crypto_pairs)
 
-# Limpieza absoluta de símbolos extra o triángulo en el Delta
-for r in table_data:
-    st.markdown(f"""
-        <div style="background: rgba(13, 17, 23, 0.9); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="width: 130px;">
-                <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
-                <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
-            </div>
-            <div>
-                <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
-            </div>
-            <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold;">
-                {r['Prob']}
-            </div>
-            <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
-                Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
-            </div>
-            <div style="width: 45px; text-align: right;">
-                <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+# 4. Tabla de Ranking para Futuros e Índices
+futures_pairs = [
+    ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento bursátil global.")
+]
+render_category_ranking("Futuros e Índices", futures_pairs)
 
-st.markdown("<br>", unsafe_allow_html=True)
-sel_pair = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental:", [x['Pair'] for x in table_data])
-sel_thesis = next(x['Thesis'] for x in table_data if x['Pair'] == sel_pair)
+# --- SELECTOR DE TESIS INSTITUCIONAL ---
+all_pairs_flat = forex_pairs + metals_energy_pairs + crypto_pairs + futures_pairs
+sel_pair = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental:", [x[0] for x in all_pairs_flat])
+sel_thesis = next(x[2] for x in all_pairs_flat if x[0] == sel_pair)
 st.info(f"**Tesis Institucional ({sel_pair}):** {sel_thesis}")
 
 # --- FEED DE NOTICIAS ---
