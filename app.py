@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS universales y 100% responsivos para móviles y escritorios
+# Estilos CSS limpios y optimizados para PC y móvil
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -62,27 +62,28 @@ st.markdown("""
         padding-bottom: 6px;
     }
 
-    .stButton button {
-        background: #111827 !important;
-        color: #E5E7EB !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 12px !important;
-    }
-
-    /* Tarjetas de ranking ultra limpias y simétricas */
-    .ranking-item {
-        background: rgba(13, 17, 23, 0.9);
-        border: 1px solid rgba(255,255,255,0.06);
+    .ranking-card {
+        background: rgba(13, 17, 23, 0.95);
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    
+    .card-row-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .card-row-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding-top: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -115,9 +116,11 @@ if 'username' not in st.session_state:
     st.session_state.username = ""
 if 'is_admin' not in st.session_state:
     st.session_state.is_admin = False
+if 'show_admin_panel' not in st.session_state:
+    st.session_state.show_admin_panel = False
 
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.3, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("""
@@ -317,7 +320,7 @@ for asset, smoothed_score in st.session_state.asset_scores_history.items():
         'bg': bg
     }
 
-# --- BARRA LATERAL (GESTIÓN DE RIESGO Y PANEL ADMIN SaaS) ---
+# --- BARRA LATERAL (GESTIÓN DE RIESGO) ---
 with st.sidebar:
     st.markdown("### 🧮 Gestión de Riesgo")
     account_balance = st.number_input("Balance ($)", value=10000.0, step=500.0)
@@ -340,17 +343,45 @@ with st.sidebar:
     utc_h = datetime.datetime.utcnow().hour
     session_text = "🟢 LONDRES / NY" if 7 <= utc_h < 20 else "🟡 ASIA / RANGO"
     st.markdown(f"<div style='font-size: 11px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_text}</div>", unsafe_allow_html=True)
-    
-    # --- PANEL DE ADMINISTRACIÓN (SOLO PARA yanezdepablos) ---
-    if st.session_state.is_admin:
-        st.markdown("<br><hr>", unsafe_allow_html=True)
-        st.markdown("### 🔐 Panel SaaS (Admin)")
-        with st.expander("Gestionar Clientes"):
-            new_client = st.text_input("Usuario del Cliente")
-            new_pass = st.text_input("Contraseña del Cliente", type="password")
-            days_valid = st.number_input("Días de Suscripción", value=30, step=1)
+
+# --- CABECERA PRINCIPAL Y BOTÓN ADMIN GARANTIZADO ---
+user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
+
+st.markdown(f"""
+    <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div>
+            <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
+            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
+        </div>
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(52,211,153,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
+            {user_badge}
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Verificación estricta por nombre de usuario para asegurar que el botón aparezca siempre al administrador
+if st.session_state.username == "yanezdepablos":
+    st.session_state.is_admin = True
+    btn_text = "🔒 Cerrar Panel Admin SaaS" if st.session_state.show_admin_panel else "🔐 Abrir Panel Admin SaaS"
+    if st.button(btn_text, use_container_width=True):
+        st.session_state.show_admin_panel = not st.session_state.show_admin_panel
+        st.rerun()
+
+# --- PANEL DE ADMINISTRACIÓN SAAS ---
+if st.session_state.is_admin and st.session_state.show_admin_panel:
+    with st.container():
+        st.markdown("""
+            <div style="background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(52, 211, 153, 0.4); padding: 25px; border-radius: 14px; margin-top: 10px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                <h3 style="color: #34D399; margin-top: 0; font-size: 16px; font-weight: 800; letter-spacing: 0.05em;">🔐 PANEL DE ADMINISTRACIÓN SAAS</h3>
+        """, unsafe_allow_html=True)
+        
+        col_adm1, col_adm2 = st.columns(2, gap="large")
+        with col_adm1:
+            new_client = st.text_input("Usuario del Cliente", key="admin_new_client")
+            new_pass = st.text_input("Contraseña del Cliente", type="password", key="admin_new_pass")
+            days_valid = st.number_input("Días de Suscripción", value=30, step=1, key="admin_days")
             
-            if st.button("Crear / Renovar Licencia"):
+            if st.button("Crear / Renovar Licencia", use_container_width=True):
                 if new_client and new_pass:
                     expiry = (datetime.date.today() + datetime.timedelta(days=int(days_valid))).strftime("%Y-%m-%d")
                     conn = sqlite3.connect('macro_licenses.db')
@@ -362,33 +393,21 @@ with st.sidebar:
                     ''', (new_client, new_pass, expiry))
                     conn.commit()
                     conn.close()
-                    st.success(f"¡Licencia creada para {new_client} hasta {expiry}!")
+                    st.success(f"¡Licencia creada con éxito para {new_client} hasta el {expiry}!")
                 else:
-                    st.warning("Completa usuario y contraseña.")
-            
-            st.markdown("#### Usuarios Activos:")
+                    st.warning("Por favor completa el usuario y la contraseña.")
+                    
+        with col_adm2:
+            st.markdown("<p style='font-size: 13px; font-weight: bold; color: #E5E7EB; margin-bottom: 8px;'>Clientes Registrados:</p>", unsafe_allow_html=True)
             conn = sqlite3.connect('macro_licenses.db')
             df_users = pd.read_sql_query("SELECT username, expiry_date FROM users WHERE is_admin = 0", conn)
             conn.close()
             if not df_users.empty:
-                st.dataframe(df_users, use_container_width=True)
+                st.dataframe(df_users, use_container_width=True, height=180)
             else:
                 st.info("No hay clientes registrados aún.")
-
-# --- CABECERA PRINCIPAL CON EMOJIS DIFERENCIADOS ---
-user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
-
-st.markdown(f"""
-    <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
-            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
-        </div>
-        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
-            {user_badge}
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+                
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- MATRICES POR CATEGORÍA ---
 def render_group(title, keys):
@@ -414,7 +433,7 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TABLAS DE RANKING UNIFICADAS Y 100% ARMONIOSAS ---
+# --- TABLAS DE RANKING ---
 def render_single_asset_ranking(category_title, assets_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -442,20 +461,26 @@ def render_single_asset_ranking(category_title, assets_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-item">
-                <div>
-                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
-                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Asset']}</span>
-                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px; display: block; margin-top: 2px;">{r['Risk']}</span>
+            <div class="ranking-card">
+                <div class="card-row-top">
+                    <div>
+                        <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                        <span style="font-weight: 900; color: #FFF; font-family: monospace; font-size: 15px;">{r['Asset']}</span>
+                    </div>
+                    <div>
+                        <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 12px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                    </div>
+                    <div style="font-family: monospace; font-size: 15px; color: #34D399; font-weight: 900;">
+                        {r['Prob']}
+                    </div>
                 </div>
-                <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
-                </div>
-                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
-                    {r['Prob']}
-                </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB; text-align: right;">
-                    Score: <span class="neon-glow">{r['Score']:.1f}</span>
+                <div class="card-row-bottom">
+                    <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
+                        Score: <span class="neon-glow" style="font-weight: bold;">{r['Score']:.1f}</span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: {r['RiskColor']};">
+                        Riesgo: {r['Risk']}
+                    </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -492,20 +517,26 @@ def render_category_ranking(category_title, pairs_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-item">
-                <div>
-                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
-                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
-                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px; display: block; margin-top: 2px;">{r['Risk']}</span>
+            <div class="ranking-card">
+                <div class="card-row-top">
+                    <div>
+                        <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                        <span style="font-weight: 900; color: #FFF; font-family: monospace; font-size: 15px;">{r['Pair']}</span>
+                    </div>
+                    <div>
+                        <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 12px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                    </div>
+                    <div style="font-family: monospace; font-size: 15px; color: #34D399; font-weight: 900;">
+                        {r['Prob']}
+                    </div>
                 </div>
-                <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
-                </div>
-                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
-                    {r['Prob']}
-                </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB; text-align: right;">
-                    Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
+                <div class="card-row-bottom">
+                    <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
+                        Delta: <span class="neon-glow" style="font-weight: bold;">{r['Delta']:+.1f}</span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: {r['RiskColor']};">
+                        Riesgo: {r['Risk']}
+                    </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -566,22 +597,33 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS ---
+# --- FEED DE NOTICIAS (ÚNICO, BLINDADO Y SIN DUPLICADOS) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
-f_cols = st.columns(3)
-for idx, item in enumerate(live_news_feed[:3]):
-    c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
-    with f_cols[idx]:
-        st.markdown(f"""
-            <div class="asset-card" style="text-align: left; min-height: 130px;">
-                <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: #9CA3AF; margin-bottom: 4px;">
-                    <span><b>{item['currency']}</b></span>
-                    <span style="color: {c_val};">{item['impact']:+.1f} SD</span>
+
+unique_news = []
+seen_headlines = set()
+for item in live_news_feed:
+    if item['title'] not in seen_headlines:
+        seen_headlines.add(item['title'])
+        unique_news.append(item)
+    if len(unique_news) >= 3:
+        break
+
+if unique_news:
+    f_cols = st.columns(len(unique_news))
+    for idx, item in enumerate(unique_news):
+        c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
+        with f_cols[idx]:
+            st.markdown(f"""
+                <div class="asset-card" style="text-align: left; min-height: 130px;">
+                    <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: #9CA3AF; margin-bottom: 4px;">
+                        <span><b>{item['currency']}</b></span>
+                        <span style="color: {c_val};">{item['impact']:+.1f} SD</span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: #F3F4F6; margin-bottom: 4px;">{item['title']}</div>
+                    <p style="font-size: 10px; color: #9CA3AF; margin: 0; line-height: 1.3;">{item['summary']}</p>
                 </div>
-                <div style="font-size: 11px; font-weight: 700; color: #F3F4F6; margin-bottom: 4px;">{item['title']}</div>
-                <p style="font-size: 10px; color: #9CA3AF; margin: 0; line-height: 1.3;">{item['summary']}</p>
-            </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
 time.sleep(30)
 st.rerun()
