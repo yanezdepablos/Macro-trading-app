@@ -14,12 +14,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS limpios, minimalistas y optimizados para móvil
+# Estilos CSS limpios, minimalistas y optimizados para móvil (con parche para el badge flotante)
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    div[data-testid="stStatusWidget"] {visibility: hidden !important;}
     
     .stApp {
         background-color: #07090E;
@@ -29,7 +31,7 @@ st.markdown("""
     
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
 
@@ -192,7 +194,6 @@ def fetch_real_macro_news():
             target_scores[asset] += (item['impact'] * 0.35)
             target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
-    # Suavizado equilibrado (alfa moderado para permitir movimiento real sin volverse loco)
     alpha = 0.15
     processed_assets = {}
     region_map = {
@@ -311,7 +312,7 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- RANKING DE PARES (ORDENADO DE MAYOR A MENOR PROBABILIDAD) ---
+# --- RANKING DE PARES ---
 st.markdown('<div class="section-header">🏆 Ranking Direccional de Activos (Probabilidad Descendente)</div>', unsafe_allow_html=True)
 
 pairs_raw = [
@@ -336,7 +337,6 @@ for pair, region, thesis in pairs_raw:
     q_score = assets_data.get(q, {'score': 5.0})['score']
     delta = b_score - q_score
     
-    # Umbrales equilibrados para evitar neutralidad eterna pero con filtro de dirección claro
     if delta > 0.25:
         direction = "COMPRAR"
         dir_color = "#34D399"
