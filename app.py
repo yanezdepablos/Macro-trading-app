@@ -407,4 +407,71 @@ for pair, region, thesis in pairs_raw:
     direction = "BUY" if delta > 0.3 else ("SELL" if delta < -0.3 else "NEUTRAL")
     dir_color = "#34D399" if direction == "BUY" else ("#EF4444" if direction == "SELL" else "#FBBF24")
     
+    prob = int(min(96, max(52, 50 + abs(delta) * 11)))
     
+    is_high_volatility = abs(delta) > 3.2
+    risk = "Alto (Kill-Switch)" if is_high_volatility else ("Bajo" if prob > 72 else "Medio")
+    risk_color = "#EF4444" if is_high_volatility else ("#34D399" if prob > 72 else "#FBBF24")
+    
+    table_data.append({
+        "Pair": pair,
+        "Region": region,
+        "Dir": direction,
+        "DirColor": dir_color,
+        "Delta": round(delta, 1),
+        "ProbVal": prob,
+        "Prob": f"{prob}%",
+        "Risk": risk,
+        "RiskColor": risk_color,
+        "Thesis": thesis
+    })
+
+# ORDENAMIENTO ESTRICTO: De mayor probabilidad a menor probabilidad
+table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
+
+for row in table_data:
+    st.markdown(f"""
+        <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 18px rgba(0,0,0,0.4);">
+            <div style="display: flex; align-items: center; gap: 12px; width: 170px;">
+                <span style="font-size: 9px; font-weight: 700; color: #9CA3AF; background: rgba(255,255,255,0.06); padding: 3px 6px; border-radius: 4px; font-family: monospace;">{row['Region']}</span>
+                <span style="font-weight: 800; color: #FFFFFF; font-family: monospace; font-size: 14px;">{row['Pair']}</span>
+            </div>
+            <div><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 5px 12px; border-radius: 6px; border: 1px solid {row['DirColor']}33; font-size: 11px; text-shadow: 0 0 8px {row['DirColor']}66;">{row['Dir']}</span></div>
+            <div style="font-family: monospace; font-weight: 700; color: #E5E7EB; font-size: 13px;">Delta: <span class="neon-glow">{row['Delta']:+.1f}</span></div>
+            <div style="font-family: monospace; color: #34D399; font-weight: 800; font-size: 13px;">Prob: {row['Prob']}</div>
+            <div><span style="color: {row['RiskColor']}; font-weight: 700; font-size: 11px;">{row['Risk']}</span></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+selected_pair = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental Algorítmica:", [r['Pair'] for r in table_data])
+selected_thesis = next(r['Thesis'] for r in table_data if r['Pair'] == selected_pair)
+st.info(f"**Tesis Institucional para {selected_pair}:** {selected_thesis}")
+
+# --- FEED DE NOTICIAS & LOG 72H ---
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📰 Titulares Multiactivos en Vivo (Filtro Estricto Máximo 3 Días)</p>", unsafe_allow_html=True)
+
+f_cols = st.columns(3)
+for idx, item in enumerate(live_news_feed[:3]):
+    sd_text = f"+{item['impact']} SD" if item['impact'] > 0 else f"{item['impact']} SD"
+    color_val = "#34D399" if item['impact'] > 0 else "#EF4444"
+    with f_cols[idx]:
+        st.markdown(f"""
+            <div class="neon-card" style="text-align: left; min-height: 155px;">
+                <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 10px; color: #9CA3AF; margin-bottom: 6px;">
+                    <span style="color: #6B7280; font-weight: bold;">{item['currency']} | {item['source'][:22]}</span>
+                    <span style="color: {color_val}; font-weight: bold; text-shadow: 0 0 8px {color_val}66;">{sd_text}</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; color: #F3F4F6; margin-bottom: 6px;">{item['title']}</div>
+                <p style="font-size: 11px; color: #9CA3AF; margin: 0; line-height: 1.4;">{item['summary']}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+with st.expander("📂 Ver Registro Histórico Multiactivo Procesado (< 72 Horas)"):
+    history_df = pd.DataFrame(live_news_feed)
+    st.dataframe(history_df, use_container_width=True)
+
+# Refresco autónomo cada 30 segundos
+time.sleep(30)
+st.rerun()
