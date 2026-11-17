@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS universales y 100% responsivos para móviles y escritorios
+# Estilos CSS limpios y optimizados para visualización perfecta en cualquier dispositivo
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -71,26 +71,29 @@ st.markdown("""
         font-size: 12px !important;
     }
 
-    /* Contenedor de ranking inteligente adaptable por Grid CSS */
-    .ranking-grid-card {
-        background: rgba(13, 17, 23, 0.9);
-        border: 1px solid rgba(255,255,255,0.06);
+    /* Tarjetas de ranking ultra limpias, ordenadas y simétricas */
+    .ranking-card {
+        background: rgba(13, 17, 23, 0.95);
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
-        display: grid;
-        grid-template-columns: 1.2fr 1fr 1fr 1fr 0.8fr;
-        align-items: center;
-        gap: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-
-    @media (max-width: 768px) {
-        .ranking-grid-card {
-            grid-template-columns: 1.2fr 1fr 1fr;
-            grid-template-rows: auto auto;
-            padding: 12px;
-            gap: 8px;
-        }
+    
+    .card-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .card-row-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding-top: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -422,7 +425,7 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TABLAS DE RANKING CON GRID CSS 100% BLINDADO PARA MÓVIL Y PC ---
+# --- TABLAS DE RANKING EN FORMATO DE TARJETA ESTÉTICA Y ORDENADA ---
 def render_single_asset_ranking(category_title, assets_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -450,22 +453,26 @@ def render_single_asset_ranking(category_title, assets_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-grid-card">
-                <div>
-                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
-                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Asset']}</span>
+            <div class="ranking-card">
+                <div class="card-row-top">
+                    <div>
+                        <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                        <span style="font-weight: 900; color: #FFF; font-family: monospace; font-size: 15px;">{r['Asset']}</span>
+                    </div>
+                    <div>
+                        <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 12px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                    </div>
+                    <div style="font-family: monospace; font-size: 15px; color: #34D399; font-weight: 900;">
+                        {r['Prob']}
+                    </div>
                 </div>
-                <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 8px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 10px; display: inline-block;">{r['Dir']}</span>
-                </div>
-                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
-                    {r['Prob']}
-                </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
-                    Score: <span class="neon-glow">{r['Score']:.1f}</span>
-                </div>
-                <div style="text-align: right;">
-                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
+                <div class="card-row-bottom">
+                    <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
+                        Score: <span class="neon-glow" style="font-weight: bold;">{r['Score']:.1f}</span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: {r['RiskColor']};">
+                        Riesgo: {r['Risk']}
+                    </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -502,22 +509,26 @@ def render_category_ranking(category_title, pairs_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-grid-card">
-                <div>
-                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
-                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
+            <div class="ranking-card">
+                <div class="card-row-top">
+                    <div>
+                        <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                        <span style="font-weight: 900; color: #FFF; font-family: monospace; font-size: 15px;">{r['Pair']}</span>
+                    </div>
+                    <div>
+                        <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 12px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                    </div>
+                    <div style="font-family: monospace; font-size: 15px; color: #34D399; font-weight: 900;">
+                        {r['Prob']}
+                    </div>
                 </div>
-                <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 8px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 10px; display: inline-block;">{r['Dir']}</span>
-                </div>
-                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
-                    {r['Prob']}
-                </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
-                    Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
-                </div>
-                <div style="text-align: right;">
-                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
+                <div class="card-row-bottom">
+                    <div style="font-family: monospace; font-size: 11px; color: #9CA3AF;">
+                        Delta: <span class="neon-glow" style="font-weight: bold;">{r['Delta']:+.1f}</span>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: {r['RiskColor']};">
+                        Riesgo: {r['Risk']}
+                    </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -572,7 +583,7 @@ def get_thesis(asset):
         if a == asset: return t
     for a, r, t in crypto_assets:
         if a == asset: return t
-    for a, r, t, in futures_assets: # Nota: se mantiene compatible
+    for a, r, t in futures_assets:
         if a == asset: return t
     return "Análisis macroeconómico institucional en curso."
 
