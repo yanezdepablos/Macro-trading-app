@@ -231,7 +231,10 @@ def fetch_real_macro_news_cached():
                     
                     if title_el is None or not title_el.text: continue
                     title_text = title_el.text.strip()
-                    if title_text in seen_titles: continue
+                    
+                    # Normalización estricta para evitar duplicados por minúsculas/espacios
+                    normalized_title = title_text.lower().strip()
+                    if normalized_title in seen_titles: continue
                         
                     is_recent = False
                     pub_time_str = "Reciente"
@@ -247,7 +250,7 @@ def fetch_real_macro_news_cached():
                             is_recent = True
                             
                     if not is_recent: continue
-                    seen_titles.add(title_text)
+                    seen_titles.add(normalized_title)
                     title_lower = title_text.lower()
                     
                     detected_asset = 'USD'
@@ -359,7 +362,6 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Verificación estricta por nombre de usuario para asegurar que el botón aparezca siempre al administrador
 if st.session_state.username == "yanezdepablos":
     st.session_state.is_admin = True
     btn_text = "🔒 Cerrar Panel Admin SaaS" if st.session_state.show_admin_panel else "🔐 Abrir Panel Admin SaaS"
@@ -597,14 +599,15 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS (ÚNICO, BLINDADO Y SIN DUPLICADOS) ---
+# --- FEED DE NOTICIAS (100% BLINDADO CONTRA DUPLICADOS) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
 
 unique_news = []
-seen_headlines = set()
+seen_normalized_titles = set()
 for item in live_news_feed:
-    if item['title'] not in seen_headlines:
-        seen_headlines.add(item['title'])
+    norm_title = item['title'].lower().strip()
+    if norm_title not in seen_normalized_titles:
+        seen_normalized_titles.add(norm_title)
         unique_news.append(item)
     if len(unique_news) >= 3:
         break
