@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS optimizados y 100% Responsivos para móviles y escritorio
+# Estilos CSS universales y 100% responsivos para móviles y escritorios
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -71,24 +71,23 @@ st.markdown("""
         font-size: 12px !important;
     }
 
-    /* Tarjetas de ranking adaptativas para móviles */
-    .ranking-row {
+    /* Contenedor universal de ranking adaptativo para móviles y PC */
+    .ranking-item {
         background: rgba(13, 17, 23, 0.9);
         border: 1px solid rgba(255,255,255,0.06);
         border-radius: 10px;
-        padding: 12px 14px;
+        padding: 12px 16px;
         margin-bottom: 8px;
-        display: grid;
-        grid-template-columns: 1.1fr 1fr 0.9fr 1fr 0.6fr;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
     @media (max-width: 768px) {
-        .ranking-row {
-            grid-template-columns: 1fr 1fr 1fr;
-            row-gap: 10px;
-            padding: 10px;
+        .ranking-item {
+            padding: 10px 12px;
         }
     }
     </style>
@@ -421,7 +420,7 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TABLAS DE RANKING ADAPTATIVAS PARA MÓVIL Y PC ---
+# --- TABLAS DE RANKING 100% ADAPTATIVAS (FLUIDAS PARA MÓVIL, TABLET Y PC) ---
 def render_single_asset_ranking(category_title, assets_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -449,21 +448,21 @@ def render_single_asset_ranking(category_title, assets_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-row">
-                <div>
+            <div class="ranking-item">
+                <div style="min-width: 90px;">
                     <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
                     <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Asset']}</span>
                 </div>
                 <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 8px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 10px; display: inline-block; text-align: center;">{r['Dir']}</span>
+                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
                 </div>
-                <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold; text-align: center;">
+                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
                     {r['Prob']}
                 </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB; text-align: right;">
+                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
                     Score: <span class="neon-glow">{r['Score']:.1f}</span>
                 </div>
-                <div style="text-align: right;">
+                <div style="text-align: right; min-width: 45px;">
                     <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
                 </div>
             </div>
@@ -501,21 +500,21 @@ def render_category_ranking(category_title, pairs_list):
     
     for r in table_data:
         st.markdown(f"""
-            <div class="ranking-row">
-                <div>
+            <div class="ranking-item">
+                <div style="min-width: 90px;">
                     <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
                     <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Pair']}</span>
                 </div>
                 <div>
-                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 8px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 10px; display: inline-block; text-align: center;">{r['Dir']}</span>
+                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
                 </div>
-                <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold; text-align: center;">
+                <div style="font-family: monospace; font-size: 13px; color: #34D399; font-weight: bold;">
                     {r['Prob']}
                 </div>
-                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB; text-align: right;">
+                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
                     Delta: <span class="neon-glow">{r['Delta']:+.1f}</span>
                 </div>
-                <div style="text-align: right;">
+                <div style="text-align: right; min-width: 45px;">
                     <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
                 </div>
             </div>
