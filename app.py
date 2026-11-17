@@ -6,20 +6,23 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import streamlit.components.v1 as components
 import email.utils
+import sqlite3
 
 # Configuración de la página institucional
 st.set_page_config(
-    page_title="Macro Edge FX — Terminal Multiactivo Profesional",
+    page_title="Macro Edge FX — Terminal SaaS",
     page_icon="⚡",
     layout="wide"
 )
 
-# Estilos CSS limpios y optimizados
+# Estilos CSS limpios y optimizados para móvil y escritorio
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    .viewerBadge_container__1QSob {display: none !important;}
+    div[data-testid="stStatusWidget"] {visibility: hidden !important;}
     
     .stApp {
         background-color: #07090E;
@@ -70,7 +73,77 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DE ESTADO PARA ESTABILIDAD ---
+# --- CONFIGURACIÓN DE BASE DE DATOS DE LICENCIAS (SQLITE) ---
+def init_db():
+    conn = sqlite3.connect('macro_licenses.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL,
+            expiry_date TEXT NOT NULL,
+            is_admin INTEGER DEFAULT 0
+        )
+    ''')
+    # Crear tu usuario maestro por defecto si no existe
+    cursor.execute('''
+        OR IGNORE INTO users (username, password, expiry_date, is_admin)
+        VALUES ('yanezdepablos', '32157532Ca.$', '2099-12-31', 1)
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- GESTIÓN DE SESIÓN Y LOGIN ---
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'username' not in st.session_state:
+    st.session_state.username = ""
+if 'is_admin' not in st.session_state:
+    st.session_state.is_admin = False
+
+if not st.session_state.logged_in:
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    with col2:
+        st.markdown("<br><br><br>", unsafe_allow_html=True)
+        st.markdown("""
+            <div style="background: rgba(13, 17, 23, 0.95); padding: 35px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                <div style="font-size: 28px; margin-bottom: 10px;">⚡</div>
+                <h3 style="color: white; font-weight: 800; margin-bottom: 5px;">MACRO EDGE FX</h3>
+                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 20px;">Terminal Multiactivo Profesional (SaaS)</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        login_user = st.text_input("Usuario de Acceso")
+        login_pass = st.text_input("Contraseña", type="password")
+        
+        if st.button("ACCEDER A LA TERMINAL", use_container_width=True):
+            conn = sqlite3.connect('macro_licenses.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT password, expiry_date, is_admin FROM users WHERE username = ?", (login_user,))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                db_pass, db_expiry, db_admin = row
+                if login_pass == db_pass:
+                    # Validar fecha de expiración
+                    today_str = datetime.date.today().strftime("%Y-%m-%d")
+                    if db_expiry >= today_str:
+                        st.session_state.logged_in = True
+                        st.session_state.username = login_user
+                        st.session_state.is_admin = bool(db_admin)
+                        st.rerun()
+                    else:
+                        st.error("⚠️ Su licencia mensual ha expirado. Contacte al administrador para renovar.")
+                else:
+                    st.error("Contraseña incorrecta.")
+            else:
+                st.error("Usuario no registrado o inactivo.")
+    st.stop()
+
+# --- INICIALIZACIÓN DE ESTADO PARA ESTABILIDAD DE PRECIOS ---
 if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
         'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
@@ -78,7 +151,7 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI SPOT INDependiente) ---
+# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI SPOT INDEPENDIENTE) ---
 def fetch_real_macro_news():
     rss_urls = [
         ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
@@ -114,7 +187,6 @@ def fetch_real_macro_news():
     seen_titles = set()
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     max_age_days = 3
-    
     headers = {'User-Agent': 'Mozilla/5.0'}
     
     for source_label, url in rss_urls:
@@ -129,12 +201,9 @@ def fetch_real_macro_news():
                     pub_el = item.find('pubDate')
                     source_el = item.find('source')
                     
-                    if title_el is None or not title_el.text:
-                        continue
-                        
+                    if title_el is None or not title_el.text: continue
                     title_text = title_el.text.strip()
-                    if title_text in seen_titles:
-                        continue
+                    if title_text in seen_titles: continue
                         
                     is_recent = False
                     pub_time_str = "Reciente"
@@ -149,9 +218,7 @@ def fetch_real_macro_news():
                         except Exception:
                             is_recent = True
                             
-                    if not is_recent:
-                        continue
-                        
+                    if not is_recent: continue
                     seen_titles.add(title_text)
                     title_lower = title_text.lower()
                     
@@ -163,11 +230,9 @@ def fetch_real_macro_news():
                             
                     score_delta = 0.0
                     for w in bullish_words:
-                        if w in title_lower:
-                            score_delta += 0.6
+                        if w in title_lower: score_delta += 0.6
                     for w in bearish_words:
-                        if w in title_lower:
-                            score_delta -= 0.6
+                        if w in title_lower: score_delta -= 0.6
                             
                     score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
@@ -222,34 +287,9 @@ def fetch_real_macro_news():
 
     return processed_assets, live_news
 
-# --- AUTENTICACIÓN ---
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-
-if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.2, 1])
-    with col2:
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
-        st.markdown("""
-            <div style="background: rgba(13, 17, 23, 0.95); padding: 35px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
-                <div style="font-size: 28px; margin-bottom: 10px;">⚡</div>
-                <h3 style="color: white; font-weight: 800; margin-bottom: 5px;">MACRO EDGE FX</h3>
-                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 20px;">Terminal Multiactivo Profesional</p>
-            </div>
-        """, unsafe_allow_html=True)
-        st.text_input("Usuario", value="yanezdepablos", disabled=True)
-        pass_input = st.text_input("Contraseña", type="password", placeholder="Introduce la contraseña...")
-        if st.button("ACCEDER A LA TERMINAL", use_container_width=True):
-            if pass_input == "32157532Ca.$":
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.error("Contraseña incorrecta.")
-    st.stop()
-
 assets_data, live_news_feed = fetch_real_macro_news()
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (GESTIÓN DE RIESGO Y PANEL ADMIN SaaS) ---
 with st.sidebar:
     st.markdown("### 🧮 Gestión de Riesgo")
     account_balance = st.number_input("Balance ($)", value=10000.0, step=500.0)
@@ -272,16 +312,50 @@ with st.sidebar:
     utc_h = datetime.datetime.utcnow().hour
     session_text = "🟢 LONDRES / NY" if 7 <= utc_h < 20 else "🟡 ASIA / RANGO"
     st.markdown(f"<div style='font-size: 11px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_text}</div>", unsafe_allow_html=True)
+    
+    # --- PANEL DE ADMINISTRACIÓN (SOLO PARA yanezdepablos) ---
+    if st.session_state.is_admin:
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.markdown("### 🔐 Panel SaaS (Admin)")
+        with st.expander("Gestionar Clientes"):
+            new_client = st.text_input("Usuario del Cliente")
+            new_pass = st.text_input("Contraseña del Cliente", type="password")
+            days_valid = st.number_input("Días de Suscripción", value=30, step=1)
+            
+            if st.button("Crear / Renovar Licencia"):
+                if new_client and new_pass:
+                    expiry = (datetime.date.today() + datetime.timedelta(days=int(days_valid))).strftime("%Y-%m-%d")
+                    conn = sqlite3.connect('macro_licenses.db')
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO users (username, password, expiry_date, is_admin)
+                        VALUES (?, ?, ?, 0)
+                        ON CONFLICT(username) DO UPDATE SET password=excluded.password, expiry_date=excluded.expiry_date
+                    ''', (new_client, new_pass, expiry))
+                    conn.commit()
+                    conn.close()
+                    st.success(f"¡Licencia creada para {new_client} hasta {expiry}!")
+                else:
+                    st.warning("Completa usuario y contraseña.")
+            
+            st.markdown("#### Usuarios Activos:")
+            conn = sqlite3.connect('macro_licenses.db')
+            df_users = pd.read_sql_query("SELECT username, expiry_date FROM users WHERE is_admin = 0", conn)
+            conn.close()
+            if not df_users.empty:
+                st.dataframe(df_users, use_container_width=True)
+            else:
+                st.info("No hay clientes registrados aún.")
 
 # --- CABECERA PRINCIPAL ---
-st.markdown("""
+st.markdown(f"""
     <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
             <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
             <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
         </div>
         <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 10px; border-radius: 6px;">
-            👤 yanezdepablos
+            👤 {st.session_state.username}
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -312,25 +386,18 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # --- TABLAS DE RANKING SEPARADAS POR CATEGORÍA ---
 def render_single_asset_ranking(category_title, assets_list):
-    """Renderiza una tabla de ranking para activos individuales absolutos (como WTI, XAU, BTC, US500) basados en su score directo."""
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
     table_data = []
     for asset_key, region, thesis in assets_list:
         score = assets_data.get(asset_key, {'score': 5.0})['score']
-        
-        # Dirección basada en si el score es alcista (>5.5) o bajista (<4.5)
         if score >= 5.6:
-            direction = "COMPRAR"
-            dir_color = "#34D399"
+            direction, dir_color = "COMPRAR", "#34D399"
         elif score <= 4.4:
-            direction = "VENDER"
-            dir_color = "#EF4444"
+            direction, dir_color = "VENDER", "#EF4444"
         else:
-            direction = "NEUTRAL"
-            dir_color = "#FBBF24"
+            direction, dir_color = "NEUTRAL", "#FBBF24"
             
-        # Probabilidad calculada a partir de qué tanto se aleja de la zona neutral (5.0)
         prob = int(min(95, max(51, 50 + abs(score - 5.0) * 15)))
         risk = "Alto" if abs(score - 5.0) > 2.5 else ("Bajo" if prob > 70 else "Medio")
         risk_color = "#EF4444" if abs(score - 5.0) > 2.5 else ("#34D399" if prob > 70 else "#FBBF24")
@@ -377,14 +444,11 @@ def render_category_ranking(category_title, pairs_list):
         delta = b_score - q_score
         
         if delta > 0.25:
-            direction = "COMPRAR"
-            dir_color = "#34D399"
+            direction, dir_color = "COMPRAR", "#34D399"
         elif delta < -0.25:
-            direction = "VENDER"
-            dir_color = "#EF4444"
+            direction, dir_color = "VENDER", "#EF4444"
         else:
-            direction = "NEUTRAL"
-            dir_color = "#FBBF24"
+            direction, dir_color = "NEUTRAL", "#FBBF24"
             
         prob = int(min(95, max(51, 50 + abs(delta) * 12)))
         risk = "Alto" if abs(delta) > 3.0 else ("Bajo" if prob > 70 else "Medio")
@@ -421,7 +485,7 @@ def render_category_ranking(category_title, pairs_list):
         """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-# 1. Tabla de Ranking para Divisas
+# 1. Divisas
 forex_pairs = [
     ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
     ("GBP/USD", "GBR/USA", "Libra vs Dólar: Empleo e inflación británica."),
@@ -432,7 +496,7 @@ forex_pairs = [
 ]
 render_category_ranking("Divisas", forex_pairs)
 
-# 2. Tabla de Ranking para Metales y Energía (WTI Spot Absoluto)
+# 2. Metales y Energía (WTI Spot)
 metals_energy_assets = [
     ("XAU", "GOLD", "Oro Spot: Activo de refugio institucional y tasas reales."),
     ("XAG", "SILVER", "Plata Spot: Demanda industrial y metales preciosos."),
@@ -440,25 +504,24 @@ metals_energy_assets = [
 ]
 render_single_asset_ranking("Metales y Energía (WTI Spot)", metals_energy_assets)
 
-# 3. Tabla de Ranking para Criptomonedas (Absolutas)
+# 3. Criptomonedas
 crypto_assets = [
     ("BTC", "CRYPTO", "Bitcoin: Apetito al riesgo global y flujos de mercado institucional."),
     ("ETH", "CRYPTO", "Ethereum: Liquidez y adopción en ecosistema de criptoactivos.")
 ]
 render_single_asset_ranking("Criptomonedas", crypto_assets)
 
-# 4. Tabla de Ranking para Futuros e Índices (Absolutos)
+# 4. Futuros e Índices
 futures_assets = [
     ("US500", "INDEX", "S&P 500: Sentimiento bursátil y liquidez de renta variable global."),
     ("VIX", "VOLATILITY", "Índice de Volatilidad: Miedo y aversión al riesgo en mercados globales.")
 ]
 render_single_asset_ranking("Futuros, Índices y Volatilidad", futures_assets)
 
-# --- SELECTOR DE TESIS INSTITUCIONAL ---
+# --- SELECTOR DE TESIS ---
 all_selectors = [x[0] for x in forex_pairs] + [x[0] for x in metals_energy_assets] + [x[0] for x in crypto_assets] + [x[0] for x in futures_assets]
 sel_asset = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental:", all_selectors)
 
-# Buscar la tesis correspondiente según el bloque
 def get_thesis(asset):
     for p, r, t in forex_pairs:
         if p == asset: return t
