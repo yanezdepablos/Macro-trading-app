@@ -353,7 +353,7 @@ st.markdown(f"""
             <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
             <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
         </div>
-        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,254,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
             {user_badge}
         </div>
     </div>
@@ -366,7 +366,7 @@ if st.session_state.is_admin:
         st.session_state.show_admin_panel = not st.session_state.show_admin_panel
         st.rerun()
 
-# --- PANEL DE ADMINISTRACIÓN SAAS (CONTENEDOR NATIVO SEGURO) ---
+# --- PANEL DE ADMINISTRACIÓN SAAS ---
 if st.session_state.is_admin and st.session_state.show_admin_panel:
     with st.container():
         st.markdown("""
@@ -432,7 +432,7 @@ render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TABLAS DE RANKING EN FORMATO DE TARJETA ESTÉTICA Y ORDENADA ---
+# --- TABLAS DE RANKING ---
 def render_single_asset_ranking(category_title, assets_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -596,10 +596,21 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS ---
+# --- FEED DE NOTICIAS (ÚNICO Y CORREGIDO SIN DUPLICADOS) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
-f_cols = st.columns(3)
-for idx, item in enumerate(live_news_feed[:3]):
+
+# Usamos un conjunto o una lista única de elementos limpios (máximo 3 únicos)
+unique_news = []
+seen_headlines = set()
+for item in live_news_feed:
+    if item['title'] not in seen_headlines:
+        seen_headlines.add(item['title'])
+        unique_news.append(item)
+    if len(unique_news) >= 3:
+        break
+
+f_cols = st.columns(len(unique_news) if unique_news else 1)
+for idx, item in enumerate(unique_news):
     c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
     with f_cols[idx]:
         st.markdown(f"""
