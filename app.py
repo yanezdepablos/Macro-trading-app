@@ -178,13 +178,10 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO AISLADO ---
+# --- MOTOR MULTIACTIVO AISLADO (ÚNICO RSS LIMPIO) ---
 @st.cache_data(ttl=300)
 def fetch_real_macro_news_cached():
-    rss_urls = [
-        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
-        ("Google News Mercados", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+XAU+OR+BTC+OR+WTI+markets+when:3d&hl=en-US&gl=US&ceid=US:en")
-    ]
+    url = "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"
     
     asset_keywords = {
         'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc'],
@@ -217,66 +214,64 @@ def fetch_real_macro_news_cached():
     max_age_days = 3
     headers = {'User-Agent': 'Mozilla/5.0'}
     
-    for source_label, url in rss_urls:
-        try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as response:
-                xml_data = response.read()
-                root = ET.fromstring(xml_data)
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as response:
+            xml_data = response.read()
+            root = ET.fromstring(xml_data)
+            
+            for item in root.findall('.//item')[:20]:
+                title_el = item.find('title')
+                pub_el = item.find('pubDate')
+                source_el = item.find('source')
                 
-                for item in root.findall('.//item')[:15]:
-                    title_el = item.find('title')
-                    pub_el = item.find('pubDate')
-                    source_el = item.find('source')
+                if title_el is None or not title_el.text: continue
+                title_text = title_el.text.strip()
+                
+                norm_title = title_text.lower().strip()
+                if norm_title in seen_titles: continue
                     
-                    if title_el is None or not title_el.text: continue
-                    title_text = title_el.text.strip()
-                    
-                    # Normalización estricta para evitar duplicados por minúsculas/espacios
-                    normalized_title = title_text.lower().strip()
-                    if normalized_title in seen_titles: continue
-                        
-                    is_recent = False
-                    pub_time_str = "Reciente"
-                    if pub_el is not None and pub_el.text:
-                        try:
-                            parsed_date = email.utils.parsedate_to_datetime(pub_el.text)
-                            if parsed_date.tzinfo is None:
-                                parsed_date = parsed_date.replace(tzinfo=datetime.timezone.utc)
-                            if (now_utc - parsed_date).total_days() <= max_age_days:
-                                is_recent = True
-                                pub_time_str = parsed_date.strftime("%d/%m %H:%M UTC")
-                        except Exception:
+                is_recent = False
+                pub_time_str = "Reciente"
+                if pub_el is not None and pub_el.text:
+                    try:
+                        parsed_date = email.utils.parsedate_to_datetime(pub_el.text)
+                        if parsed_date.tzinfo is None:
+                            parsed_date = parsed_date.replace(tzinfo=datetime.timezone.utc)
+                        if (now_utc - parsed_date).total_days() <= max_age_days:
                             is_recent = True
-                            
-                    if not is_recent: continue
-                    seen_titles.add(normalized_title)
-                    title_lower = title_text.lower()
-                    
-                    detected_asset = 'USD'
-                    for asset, kws in asset_keywords.items():
-                        if any(kw in title_lower for kw in kws):
-                            detected_asset = asset
-                            break
-                            
-                    score_delta = 0.0
-                    for w in bullish_words:
-                        if w in title_lower: score_delta += 0.6
-                    for w in bearish_words:
-                        if w in title_lower: score_delta -= 0.6
-                            
-                    score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
-                    real_source = source_el.text if (source_el is not None and source_el.text) else source_label
-                    
-                    live_news.append({
-                        "currency": detected_asset,
-                        "source": f"{real_source} ({pub_time_str})",
-                        "title": title_text,
-                        "impact": score_delta,
-                        "summary": f"Impacto analizado (< 3 días) para {detected_asset}."
-                    })
-        except Exception:
-            continue
+                            pub_time_str = parsed_date.strftime("%d/%m %H:%M UTC")
+                    except Exception:
+                        is_recent = True
+                        
+                if not is_recent: continue
+                seen_titles.add(norm_title)
+                title_lower = title_text.lower()
+                
+                detected_asset = 'USD'
+                for asset, kws in asset_keywords.items():
+                    if any(kw in title_lower for kw in kws):
+                        detected_asset = asset
+                        break
+                        
+                score_delta = 0.0
+                for w in bullish_words:
+                    if w in title_lower: score_delta += 0.6
+                for w in bearish_words:
+                    if w in title_lower: score_delta -= 0.6
+                        
+                score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
+                real_source = source_el.text if (source_el is not None and source_el.text) else "Google News"
+                
+                live_news.append({
+                    "currency": detected_asset,
+                    "source": f"{real_source} ({pub_time_str})",
+                    "title": title_text,
+                    "impact": score_delta,
+                    "summary": f"Impacto analizado (< 3 días) para {detected_asset}."
+                })
+    except Exception:
+        pass
 
     if not live_news:
         live_news = [{"currency": "USD", "source": "Filtro 72h", "title": "Sincronizando flujo de mercado en vivo...", "impact": 0.0, "summary": "Esperando eventos recientes."}]
@@ -599,15 +594,16 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS (100% BLINDADO CONTRA DUPLICADOS) ---
+# --- FEED DE NOTICIAS (GARANTIZADO 100% ÚNICO Y SIN DUPLICADOS) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
 
+# Filtro final estricto por lista de títulos únicos
 unique_news = []
-seen_normalized_titles = set()
+seen_titles_final = set()
 for item in live_news_feed:
-    norm_title = item['title'].lower().strip()
-    if norm_title not in seen_normalized_titles:
-        seen_normalized_titles.add(norm_title)
+    t_clean = item['title'].lower().strip()
+    if t_clean not in seen_titles_final:
+        seen_titles_final.add(t_clean)
         unique_news.append(item)
     if len(unique_news) >= 3:
         break
