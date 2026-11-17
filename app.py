@@ -45,8 +45,8 @@ st.markdown("""
         background: rgba(15, 23, 42, 0.7);
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
-        padding: 12px 8px;
-        text-align: center;
+        padding: 12px 14px;
+        margin-bottom: 10px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
@@ -178,7 +178,7 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO AISLADO (ÚNICO RSS LIMPIO) ---
+# --- MOTOR MULTIACTIVO AISLADO ---
 @st.cache_data(ttl=300)
 def fetch_real_macro_news_cached():
     url = "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"
@@ -220,7 +220,7 @@ def fetch_real_macro_news_cached():
             xml_data = response.read()
             root = ET.fromstring(xml_data)
             
-            for item in root.findall('.//item')[:20]:
+            for item in root.findall('.//item')[:25]:
                 title_el = item.find('title')
                 pub_el = item.find('pubDate')
                 source_el = item.find('source')
@@ -342,7 +342,7 @@ with st.sidebar:
     session_text = "🟢 LONDRES / NY" if 7 <= utc_h < 20 else "🟡 ASIA / RANGO"
     st.markdown(f"<div style='font-size: 11px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_text}</div>", unsafe_allow_html=True)
 
-# --- CABECERA PRINCIPAL Y BOTÓN ADMIN GARANTIZADO ---
+# --- CABECERA PRINCIPAL Y BOTÓN ADMIN ---
 user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
 
 st.markdown(f"""
@@ -594,10 +594,9 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS (GARANTIZADO 100% ÚNICO Y SIN DUPLICADOS) ---
+# --- FEED DE NOTICIAS (RENDERIZADO VERTICAL ÚNICO SIN DUPLICAR) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
 
-# Filtro final estricto por lista de títulos únicos
 unique_news = []
 seen_titles_final = set()
 for item in live_news_feed:
@@ -608,21 +607,19 @@ for item in live_news_feed:
     if len(unique_news) >= 3:
         break
 
-if unique_news:
-    f_cols = st.columns(len(unique_news))
-    for idx, item in enumerate(unique_news):
-        c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
-        with f_cols[idx]:
-            st.markdown(f"""
-                <div class="asset-card" style="text-align: left; min-height: 130px;">
-                    <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: #9CA3AF; margin-bottom: 4px;">
-                        <span><b>{item['currency']}</b></span>
-                        <span style="color: {c_val};">{item['impact']:+.1f} SD</span>
-                    </div>
-                    <div style="font-size: 11px; font-weight: 700; color: #F3F4F6; margin-bottom: 4px;">{item['title']}</div>
-                    <p style="font-size: 10px; color: #9CA3AF; margin: 0; line-height: 1.3;">{item['summary']}</p>
-                </div>
-            """, unsafe_allow_html=True)
+# Renderizamos directo como lista vertical limpia para evitar cualquier fallo de columnas de Streamlit
+for item in unique_news:
+    c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
+    st.markdown(f"""
+        <div class="asset-card">
+            <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: #9CA3AF; margin-bottom: 4px;">
+                <span><b>{item['currency']}</b></span>
+                <span style="color: {c_val};">{item['impact']:+.1f} SD</span>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #F3F4F6; margin-bottom: 4px;">{item['title']}</div>
+            <p style="font-size: 10px; color: #9CA3AF; margin: 0; line-height: 1.3;">{item['summary']}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 time.sleep(30)
 st.rerun()
