@@ -220,7 +220,7 @@ def fetch_real_macro_news_cached():
             xml_data = response.read()
             root = ET.fromstring(xml_data)
             
-            for item in root.findall('.//item')[:25]:
+            for item in root.findall('.//item')[:15]:
                 title_el = item.find('title')
                 pub_el = item.find('pubDate')
                 source_el = item.find('source')
@@ -594,20 +594,22 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS (RENDERIZADO VERTICAL ÚNICO SIN DUPLICAR) ---
+# --- FEED DE NOTICIAS (FORZADO A MÁXIMO 3 ÚNICAS) ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
 
+raw_news = fetch_real_macro_news_cached()
 unique_news = []
 seen_titles_final = set()
-for item in live_news_feed:
+
+for item in raw_news:
     t_clean = item['title'].lower().strip()
     if t_clean not in seen_titles_final:
         seen_titles_final.add(t_clean)
         unique_news.append(item)
-    if len(unique_news) >= 3:
+    if len(unique_news) == 3:  # Forzamos exactamente 3
         break
 
-# Renderizamos directo como lista vertical limpia para evitar cualquier fallo de columnas de Streamlit
+# Renderizado vertical limpio y blindado
 for item in unique_news:
     c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
     st.markdown(f"""
