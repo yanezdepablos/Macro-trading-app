@@ -85,9 +85,9 @@ def init_db():
             is_admin INTEGER DEFAULT 0
         )
     ''')
-    # Crear tu usuario maestro por defecto si no existe
+    # Corregido: INSERT OR IGNORE
     cursor.execute('''
-        OR IGNORE INTO users (username, password, expiry_date, is_admin)
+        INSERT OR IGNORE INTO users (username, password, expiry_date, is_admin)
         VALUES ('yanezdepablos', '32157532Ca.$', '2099-12-31', 1)
     ''')
     conn.commit()
@@ -128,7 +128,6 @@ if not st.session_state.logged_in:
             if row:
                 db_pass, db_expiry, db_admin = row
                 if login_pass == db_pass:
-                    # Validar fecha de expiración
                     today_str = datetime.date.today().strftime("%Y-%m-%d")
                     if db_expiry >= today_str:
                         st.session_state.logged_in = True
