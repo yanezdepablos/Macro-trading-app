@@ -9,7 +9,7 @@ import email.utils
 
 # Configuración de la página institucional
 st.set_page_config(
-    page_title="Macro Edge FX - Terminal Multiactivo Separado",
+    page_title="Macro Edge FX - Terminal Institucional Estable",
     page_icon="⚡",
     layout="wide"
 )
@@ -83,9 +83,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR MULTIACTIVO CON FILTRO DE 3 DÍAS ---
+# --- INICIALIZACIÓN DE ESTADO PARA ESTABILIDAD Y SUAVIZADO (EMA) ---
+if 'asset_scores_history' not in st.session_state:
+    st.session_state.asset_scores_history = {
+        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0, 'AUD': 5.0, 'CAD': 5.0, 
+        'CHF': 5.0, 'NZD': 5.0, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.0, 'ZAR': 5.0,
+        'XAU': 5.2, 'XAG': 5.0, 'OIL': 5.0, 'BTC': 5.5, 'ETH': 5.3, 'US500': 5.4, 'VIX': 4.8
+    }
+
+# --- MOTOR MULTIACTIVO CON FILTRO DE 3 DÍAS Y SUAVIZADO DE TENDENCIA ---
 def fetch_real_macro_news():
-    """Descarga feeds RSS, descarta noticias > 3 días y evalúa fuerza para todas las categorías."""
+    """Descarga feeds RSS, descarta noticias > 3 días y aplica inercia para evitar saltos erráticos."""
     
     rss_urls = [
         ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
@@ -173,12 +181,12 @@ def fetch_real_macro_news():
                     score_delta = 0.0
                     for w in bullish_words:
                         if w in title_lower:
-                            score_delta += 0.5
+                            score_delta += 0.4
                     for w in bearish_words:
                         if w in title_lower:
-                            score_delta -= 0.5
+                            score_delta -= 0.4
                             
-                    score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
+                    score_delta = round(max(-1.5, min(1.5, score_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
                     
                     live_news.append({
@@ -193,21 +201,21 @@ def fetch_real_macro_news():
 
     if not live_news:
         live_news = [
-            {"currency": "USD", "source": "Filtro 72h Activo", "title": "Sincronizando flujo institucional limpio...", "impact": 0.0, "summary": "Esperando eventos recientes."}
+            {"currency": "USD", "source": "Filtro 72h Activo", "title": "Sincronizando flujo institucional estable...", "impact": 0.0, "summary": "Esperando eventos recientes."}
         ]
 
-    base_scores = {
-        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0, 'AUD': 5.0, 'CAD': 5.0, 
-        'CHF': 5.0, 'NZD': 5.0, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.0, 'ZAR': 5.0,
-        'XAU': 5.2, 'XAG': 5.0, 'OIL': 5.0, 'BTC': 5.5, 'ETH': 5.3, 'US500': 5.4, 'VIX': 4.8
-    }
-
+    # Cacular puntajes objetivo basados en noticias
+    target_scores = st.session_state.asset_scores_history.copy()
+    
     for item in live_news:
         asset = item['currency']
-        if asset in base_scores:
-            base_scores[asset] += (item['impact'] * 0.4)
-            base_scores[asset] = max(1.0, min(9.9, base_scores[asset]))
+        if asset in target_scores:
+            target_scores[asset] += (item['impact'] * 0.25)
+            target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
+    # APLICAR SUAVIZADO EXPONENCIAL (EMA): 92% de inercia anterior + 8% de nueva información
+    # Esto garantiza que los cambios sean extremadamente suaves y firmes a lo largo del tiempo.
+    alpha = 0.08
     processed_assets = {}
     region_map = {
         'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
@@ -215,16 +223,24 @@ def fetch_real_macro_news():
         'XAU': 'GOLD', 'XAG': 'SILVER', 'OIL': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
     }
     
-    for asset, score in base_scores.items():
-        if score >= 6.0:
+    for asset, old_score in st.session_state.asset_scores_history.items():
+        new_target = target_scores.get(asset, old_score)
+        smoothed_score = old_score * (1 - alpha) + new_target * alpha
+        smoothed_score = round(smoothed_score, 1)
+        
+        # Guardar en la memoria de sesión para el siguiente ciclo
+        st.session_state.asset_scores_history[asset] = smoothed_score
+        
+        # Asignar estados estables (con umbrales holgados para evitar bailes de estado)
+        if smoothed_score >= 5.8:
             status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.1)"
-        elif score <= 4.0:
+        elif smoothed_score <= 4.2:
             status, color, bg = "Débil", "#EF4444", "rgba(239, 68, 68, 0.1)"
         else:
             status, color, bg = "Neutral", "#FBBF24", "rgba(251, 191, 36, 0.1)"
             
         processed_assets[asset] = {
-            'score': round(score, 1),
+            'score': smoothed_score,
             'status': status,
             'region': region_map.get(asset, 'GLOBAL'),
             'color': color,
@@ -245,7 +261,7 @@ if not st.session_state.logged_in:
             <div style="background: rgba(13, 17, 23, 0.9); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px rgba(0,0,0,0.8); text-align: center;">
                 <div style="font-size: 32px; margin-bottom: 12px;">⚡</div>
                 <h2 style="color: white; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px;">MACRO EDGE FX</h2>
-                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 30px;">Terminal Multiactivo Institucional</p>
+                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 30px;">Terminal Multiactivo Estable</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -301,9 +317,9 @@ header_top_html = """
         <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
             <div>
-                <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX — MULTIACTIVO</span>
+                <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX — ESTABLE</span>
                 <span style="font-size: 10px; color: #34D399; font-family: monospace; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                    <span style="width: 7px; height: 7px; background-color: #34D399; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #34D399;"></span> VISTA SEPARADA POR CATEGORÍAS
+                    <span style="width: 7px; height: 7px; background-color: #34D399; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #34D399;"></span> TENDENCIA SUAVIZADA (SIN RUIDO ERRÁTICO)
                 </span>
             </div>
         </div>
@@ -365,22 +381,15 @@ def render_asset_group(title_text, asset_keys):
                     </div>
                 """, unsafe_allow_html=True)
 
-# 1. Divisas
 render_asset_group("💱 Divisas Principales y Cruzadas", ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SEK', 'NOK', 'SGD', 'ZAR'])
-
-# 2. Metales y Energía
 render_asset_group("🥇 Metales y Materias Primas (Energía)", ['XAU', 'XAG', 'OIL'])
-
-# 3. Criptomonedas
 render_asset_group("🪙 Criptomonedas", ['BTC', 'ETH'])
-
-# 4. Futuros e Índices
 render_asset_group("📈 Futuros, Índices y Volatilidad", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- RANKING DE PARES Y ACTIVOS (ORDENADO STRICTAMENTE DE MAYOR A MENOR PROBABILIDAD) ---
-st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Multiactivo (Ordenado de Mayor a Menor Probabilidad)</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Multiactivo (Dirección Estable por Probabilidad)</p>", unsafe_allow_html=True)
 
 pairs_raw = [
     ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Flujos de refugio institucional y tasas reales de la Fed."),
@@ -404,10 +413,18 @@ for pair, region, thesis in pairs_raw:
     q_score = assets_data.get(quote, {'score': 5.0})['score']
     delta = b_score - q_score
     
-    direction = "BUY" if delta > 0.3 else ("SELL" if delta < -0.3 else "NEUTRAL")
-    dir_color = "#34D399" if direction == "BUY" else ("#EF4444" if direction == "SELL" else "#FBBF24")
-    
-    prob = int(min(96, max(52, 50 + abs(delta) * 11)))
+    # Umbrales firmes: exige un delta claro para marcar COMPRA o VENTA, de lo contrario es NEUTRAL firme.
+    if delta > 0.4:
+        direction = "COMPRAR (BUY)"
+        dir_color = "#34D399"
+    elif delta < -0.4:
+        direction = "VENDER (SELL)"
+        dir_color = "#EF4444"
+    else:
+        direction = "NEUTRAL (ESPERAR)"
+        dir_color = "#FBBF24"
+        
+    prob = int(min(96, max(51, 50 + abs(delta) * 10)))
     
     is_high_volatility = abs(delta) > 3.2
     risk = "Alto (Kill-Switch)" if is_high_volatility else ("Bajo" if prob > 72 else "Medio")
@@ -426,7 +443,7 @@ for pair, region, thesis in pairs_raw:
         "Thesis": thesis
     })
 
-# ORDENAMIENTO ESTRICTO: De mayor probabilidad a menor probabilidad
+# Ordenamiento estricto por probabilidad
 table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
 
 for row in table_data:
