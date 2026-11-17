@@ -103,19 +103,23 @@ if 'is_admin' not in st.session_state:
     st.session_state.is_admin = False
 
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    col1, col2, col3 = st.columns([1, 1.3, 1])
     with col2:
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("""
-            <div style="background: rgba(13, 17, 23, 0.95); padding: 35px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
-                <div style="font-size: 28px; margin-bottom: 10px;">⚡</div>
-                <h3 style="color: white; font-weight: 800; margin-bottom: 5px;">MACRO EDGE FX</h3>
-                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 20px;">Terminal Multiactivo Profesional (SaaS)</p>
-            </div>
+            <div style="background: linear-gradient(145deg, rgba(13, 17, 23, 0.95), rgba(7, 9, 14, 0.98)); 
+                        padding: 40px 30px; border-radius: 18px; border: 1px solid rgba(52, 211, 153, 0.2); 
+                        box-align: center; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="font-size: 32px; margin-bottom: 8px;">⚡</div>
+                <h2 style="color: white; font-weight: 900; letter-spacing: 0.05em; margin-bottom: 2px;">MACRO EDGE FX</h2>
+                <p style="color: #34D399; font-size: 11px; font-family: monospace; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 25px;">Terminal Multiactivo Profesional</p>
+                <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-bottom: 25px;"></div>
         """, unsafe_allow_html=True)
         
-        login_user = st.text_input("Usuario de Acceso")
-        login_pass = st.text_input("Contraseña", type="password")
+        login_user = st.text_input("Usuario de Acceso", placeholder="Introduce tu usuario...")
+        login_pass = st.text_input("Contraseña", type="password", placeholder="Introduce tu contraseña...")
+        
+        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
         
         if st.button("ACCEDER A LA TERMINAL", use_container_width=True):
             conn = sqlite3.connect('macro_licenses.db')
@@ -134,11 +138,19 @@ if not st.session_state.logged_in:
                         st.session_state.is_admin = bool(db_admin)
                         st.rerun()
                     else:
-                        st.error("⚠️ Su licencia mensual ha expirado. Contacte al administrador para renovar.")
+                        st.error("⚠️ Su licencia mensual ha expirado. Contacte al administrador.")
                 else:
                     st.error("Contraseña incorrecta.")
             else:
                 st.error("Usuario no registrado o inactivo.")
+        
+        st.markdown("""
+                <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px;">
+                    <span style="color: #6B7280; font-size: 10px; font-family: monospace; letter-spacing: 0.05em;">ENGINEERED & MANAGED BY</span>
+                    <div style="color: #34D399; font-size: 12px; font-weight: 700; margin-top: 2px; letter-spacing: 0.08em;">YANEZDEPABLOS</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
     st.stop()
 
 # --- INICIALIZACIÓN DE ESTADO ESTABLE PARA PRECIOS ---
@@ -253,7 +265,6 @@ def fetch_real_macro_news_cached():
 
 live_news_feed = fetch_real_macro_news_cached()
 
-# Blindaje: Aplicar cambios de noticias solo de forma controlada sobre el estado actual
 if 'last_news_processed' not in st.session_state:
     st.session_state.last_news_processed = len(live_news_feed)
     target_scores = st.session_state.asset_scores_history.copy()
@@ -350,15 +361,17 @@ with st.sidebar:
             else:
                 st.info("No hay clientes registrados aún.")
 
-# --- CABECERA PRINCIPAL ---
+# --- CABECERA PRINCIPAL CON EMOJIS DIFERENCIADOS ---
+user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
+
 st.markdown(f"""
     <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
             <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
             <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
         </div>
-        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 10px; border-radius: 6px;">
-            👤 {st.session_state.username}
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
+            {user_badge}
         </div>
     </div>
 """, unsafe_allow_html=True)
