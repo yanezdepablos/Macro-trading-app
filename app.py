@@ -85,7 +85,6 @@ def init_db():
             is_admin INTEGER DEFAULT 0
         )
     ''')
-    # Actualización de contraseña maestra para yanezdepablos
     cursor.execute('''
         INSERT OR REPLACE INTO users (username, password, expiry_date, is_admin)
         VALUES ('yanezdepablos', '32157532Ca', '2099-12-31', 1)
@@ -150,8 +149,9 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI SPOT INDEPENDIENTE) ---
-def fetch_real_macro_news():
+# --- MOTOR MULTIACTIVO (CON CACHÉ DE NOTICIAS PARA ESTABILIDAD) ---
+@st.cache_data(ttl=300) # Mantiene las noticias cacheadas 5 minutos para evitar fluctuaciones por clics en admin
+def fetch_real_macro_news_cached():
     rss_urls = [
         ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
         ("Google News Mercados", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+XAU+OR+BTC+OR+WTI+markets+when:3d&hl=en-US&gl=US&ceid=US:en")
@@ -249,44 +249,44 @@ def fetch_real_macro_news():
     if not live_news:
         live_news = [{"currency": "USD", "source": "Filtro 72h", "title": "Sincronizando flujo de mercado en vivo...", "impact": 0.0, "summary": "Esperando eventos recientes."}]
 
-    target_scores = st.session_state.asset_scores_history.copy()
-    for item in live_news:
-        asset = item['currency']
-        if asset in target_scores:
-            target_scores[asset] += (item['impact'] * 0.35)
-            target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
+    return live_news
 
-    alpha = 0.15
-    processed_assets = {}
-    region_map = {
-        'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
-        'CHF': 'CHE', 'NZD': 'NZL', 'SEK': 'SWE', 'NOK': 'NOR', 'SGD': 'SGP', 'ZAR': 'ZAF',
-        'XAU': 'GOLD', 'XAG': 'SILVER', 'WTI': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
-    }
+live_news_feed = fetch_real_macro_news_cached()
+
+target_scores = st.session_state.asset_scores_history.copy()
+for item in live_news_feed:
+    asset = item['currency']
+    if asset in target_scores:
+        target_scores[asset] += (item['impact'] * 0.35)
+        target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
+
+alpha = 0.15
+assets_data = {}
+region_map = {
+    'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
+    'CHF': 'CHE', 'NZD': 'NZL', 'SEK': 'SWE', 'NOK': 'NOR', 'SGD': 'SGP', 'ZAR': 'ZAF',
+    'XAU': 'GOLD', 'XAG': 'SILVER', 'WTI': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
+}
+
+for asset, old_score in st.session_state.asset_scores_history.items():
+    new_target = target_scores.get(asset, old_score)
+    smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
+    st.session_state.asset_scores_history[asset] = smoothed_score
     
-    for asset, old_score in st.session_state.asset_scores_history.items():
-        new_target = target_scores.get(asset, old_score)
-        smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
-        st.session_state.asset_scores_history[asset] = smoothed_score
+    if smoothed_score >= 5.6:
+        status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.12)"
+    elif smoothed_score <= 4.4:
+        status, color, bg = "Débil", "#EF4444", "rgba(239, 68, 68, 0.12)"
+    else:
+        status, color, bg = "Neutral", "#FBBF24", "rgba(251, 191, 36, 0.12)"
         
-        if smoothed_score >= 5.6:
-            status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.12)"
-        elif smoothed_score <= 4.4:
-            status, color, bg = "Débil", "#EF4444", "rgba(239, 68, 68, 0.12)"
-        else:
-            status, color, bg = "Neutral", "#FBBF24", "rgba(251, 191, 36, 0.12)"
-            
-        processed_assets[asset] = {
-            'score': smoothed_score,
-            'status': status,
-            'region': region_map.get(asset, 'GLOBAL'),
-            'color': color,
-            'bg': bg
-        }
-
-    return processed_assets, live_news
-
-assets_data, live_news_feed = fetch_real_macro_news()
+    assets_data[asset] = {
+        'score': smoothed_score,
+        'status': status,
+        'region': region_map.get(asset, 'GLOBAL'),
+        'color': color,
+        'bg': bg
+    }
 
 # --- BARRA LATERAL (GESTIÓN DE RIESGO Y PANEL ADMIN SaaS) ---
 with st.sidebar:
