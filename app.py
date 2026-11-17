@@ -9,7 +9,7 @@ import email.utils
 
 # Configuración de la página institucional
 st.set_page_config(
-    page_title="Macro Edge FX — Terminal Multiactivo por Categorías",
+    page_title="Macro Edge FX — Terminal Multiactivo Profesional",
     page_icon="⚡",
     layout="wide"
 )
@@ -75,13 +75,13 @@ if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
         'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
         'CHF': 5.3, 'NZD': 4.9, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.2, 'ZAR': 4.7,
-        'XAU': 6.8, 'XAG': 6.2, 'OIL': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
+        'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO (FILTRO 72H + SENSIBILIDAD EQUILIBRADA) ---
+# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI CRUDE OIL) ---
 def fetch_real_macro_news():
     rss_urls = [
-        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
+        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+crude+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
         ("Google News Mercados", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+XAU+OR+BTC+OR+WTI+markets+when:3d&hl=en-US&gl=US&ceid=US:en")
     ]
     
@@ -100,7 +100,7 @@ def fetch_real_macro_news():
         'ZAR': ['zar', 'south africa', 'rand'],
         'XAU': ['gold', 'xau', 'bullion', 'precious metals'],
         'XAG': ['silver', 'xag'],
-        'OIL': ['oil', 'crude', 'brent', 'wti', 'energy', 'opec'],
+        'WTI': ['wti', 'crude', 'oil', 'brent', 'energy', 'opec'],
         'BTC': ['bitcoin', 'btc', 'crypto', 'cryptocurrency'],
         'ETH': ['ethereum', 'eth', 'altcoin'],
         'US500': ['s&p 500', 'wall street', 'stocks', 'nasdaq', 'spx', 'equity'],
@@ -197,7 +197,7 @@ def fetch_real_macro_news():
     region_map = {
         'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
         'CHF': 'CHE', 'NZD': 'NZL', 'SEK': 'SWE', 'NOK': 'NOR', 'SGD': 'SGP', 'ZAR': 'ZAF',
-        'XAU': 'GOLD', 'XAG': 'SILVER', 'OIL': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
+        'XAU': 'GOLD', 'XAG': 'SILVER', 'WTI': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
     }
     
     for asset, old_score in st.session_state.asset_scores_history.items():
@@ -304,13 +304,13 @@ def render_group(title, keys):
                 """, unsafe_allow_html=True)
 
 render_group("💱 Divisas Principales y Cruzadas", ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SEK', 'NOK', 'SGD', 'ZAR'])
-render_group("🥇 Metales y Energía", ['XAU', 'XAG', 'OIL'])
+render_group("🥇 Metales y Energía (WTI)", ['XAU', 'XAG', 'WTI'])
 render_group("🪙 Criptomonedas", ['BTC', 'ETH'])
 render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- FUNCIÓN PARA CONSTRUIR CADA TABLA DE RANKING POR CATEGORÍA ---
+# --- FUNCIÓN DE TABLAS DE RANKING SEPARADAS ---
 def render_category_ranking(category_title, pairs_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -341,7 +341,6 @@ def render_category_ranking(category_title, pairs_list):
             "Risk": risk, "RiskColor": risk_color, "Thesis": thesis
         })
     
-    # Ordenar estrictamente de mayor a menor probabilidad dentro de su categoría
     table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
     
     for r in table_data:
@@ -367,7 +366,7 @@ def render_category_ranking(category_title, pairs_list):
         """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-# 1. Tabla de Ranking para Divisas
+# 1. Divisas
 forex_pairs = [
     ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
     ("GBP/USD", "GBR/USA", "Libra vs Dólar: Empleo e inflación británica."),
@@ -378,22 +377,22 @@ forex_pairs = [
 ]
 render_category_ranking("Divisas", forex_pairs)
 
-# 2. Tabla de Ranking para Metales y Energía
+# 2. Metales y Energía (Actualizado con WTI/USD)
 metals_energy_pairs = [
     ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Refugio institucional y tasas reales."),
     ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y metales preciosos."),
-    ("OIL/USD", "ENERGY/USA", "Petróleo vs Dólar: Geopolítica y oferta global.")
+    ("WTI/USD", "ENERGY/USA", "WTI Crude Oil vs Dólar: Geopolítica, inventarios y oferta de crudo.")
 ]
-render_category_ranking("Metales y Materias Primas", metals_energy_pairs)
+render_category_ranking("Metales y Materias Primas (WTI)", metals_energy_pairs)
 
-# 3. Tabla de Ranking para Criptomonedas
+# 3. Criptomonedas
 crypto_pairs = [
     ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo y flujos ETF."),
     ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Liquidez de criptoactivos.")
 ]
 render_category_ranking("Criptomonedas", crypto_pairs)
 
-# 4. Tabla de Ranking para Futuros e Índices
+# 4. Futuros e Índices
 futures_pairs = [
     ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento bursátil global.")
 ]
