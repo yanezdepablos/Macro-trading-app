@@ -78,10 +78,10 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI CRUDE OIL) ---
+# --- MOTOR MULTIACTIVO (FILTRO 72H + WTI SPOT INDependiente) ---
 def fetch_real_macro_news():
     rss_urls = [
-        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+crude+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
+        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
         ("Google News Mercados", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+XAU+OR+BTC+OR+WTI+markets+when:3d&hl=en-US&gl=US&ceid=US:en")
     ]
     
@@ -304,13 +304,68 @@ def render_group(title, keys):
                 """, unsafe_allow_html=True)
 
 render_group("💱 Divisas Principales y Cruzadas", ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SEK', 'NOK', 'SGD', 'ZAR'])
-render_group("🥇 Metales y Energía (WTI)", ['XAU', 'XAG', 'WTI'])
+render_group("🥇 Metales y Energía (WTI Spot)", ['XAU', 'XAG', 'WTI'])
 render_group("🪙 Criptomonedas", ['BTC', 'ETH'])
 render_group("📈 Futuros e Índices", ['US500', 'VIX'])
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- FUNCIÓN DE TABLAS DE RANKING SEPARADAS ---
+# --- TABLAS DE RANKING SEPARADAS POR CATEGORÍA ---
+def render_single_asset_ranking(category_title, assets_list):
+    """Renderiza una tabla de ranking para activos individuales absolutos (como WTI, XAU, BTC, US500) basados en su score directo."""
+    st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
+    
+    table_data = []
+    for asset_key, region, thesis in assets_list:
+        score = assets_data.get(asset_key, {'score': 5.0})['score']
+        
+        # Dirección basada en si el score es alcista (>5.5) o bajista (<4.5)
+        if score >= 5.6:
+            direction = "COMPRAR"
+            dir_color = "#34D399"
+        elif score <= 4.4:
+            direction = "VENDER"
+            dir_color = "#EF4444"
+        else:
+            direction = "NEUTRAL"
+            dir_color = "#FBBF24"
+            
+        # Probabilidad calculada a partir de qué tanto se aleja de la zona neutral (5.0)
+        prob = int(min(95, max(51, 50 + abs(score - 5.0) * 15)))
+        risk = "Alto" if abs(score - 5.0) > 2.5 else ("Bajo" if prob > 70 else "Medio")
+        risk_color = "#EF4444" if abs(score - 5.0) > 2.5 else ("#34D399" if prob > 70 else "#FBBF24")
+        
+        table_data.append({
+            "Asset": asset_key, "Region": region, "Dir": direction, "Color": dir_color,
+            "Score": score, "ProbVal": prob, "Prob": f"{prob}%",
+            "Risk": risk, "RiskColor": risk_color, "Thesis": thesis
+        })
+    
+    table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
+    
+    for r in table_data:
+        st.markdown(f"""
+            <div style="background: rgba(13, 17, 23, 0.9); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="width: 130px;">
+                    <span style="font-size: 8px; color: #9CA3AF; font-family: monospace; display: block;">{r['Region']}</span>
+                    <span style="font-weight: 800; color: #FFF; font-family: monospace; font-size: 13px;">{r['Asset']}</span>
+                </div>
+                <div>
+                    <span style="color: {r['Color']}; font-weight: 800; background: {r['Color']}15; padding: 4px 10px; border-radius: 6px; border: 1px solid {r['Color']}33; font-size: 11px;">{r['Dir']}</span>
+                </div>
+                <div style="font-family: monospace; font-size: 12px; color: #34D399; font-weight: bold;">
+                    {r['Prob']}
+                </div>
+                <div style="font-family: monospace; font-size: 12px; color: #E5E7EB;">
+                    Score: <span class="neon-glow">{r['Score']:.1f}</span>
+                </div>
+                <div style="width: 45px; text-align: right;">
+                    <span style="color: {r['RiskColor']}; font-weight: 700; font-size: 10px;">{r['Risk']}</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
 def render_category_ranking(category_title, pairs_list):
     st.markdown(f'<div class="section-header">🏆 Ranking: {category_title} (Probabilidad Descendente)</div>', unsafe_allow_html=True)
     
@@ -366,7 +421,7 @@ def render_category_ranking(category_title, pairs_list):
         """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-# 1. Divisas
+# 1. Tabla de Ranking para Divisas
 forex_pairs = [
     ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
     ("GBP/USD", "GBR/USA", "Libra vs Dólar: Empleo e inflación británica."),
@@ -377,32 +432,45 @@ forex_pairs = [
 ]
 render_category_ranking("Divisas", forex_pairs)
 
-# 2. Metales y Energía (Actualizado con WTI/USD)
-metals_energy_pairs = [
-    ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Refugio institucional y tasas reales."),
-    ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y metales preciosos."),
-    ("WTI/USD", "ENERGY/USA", "WTI Crude Oil vs Dólar: Geopolítica, inventarios y oferta de crudo.")
+# 2. Tabla de Ranking para Metales y Energía (WTI Spot Absoluto)
+metals_energy_assets = [
+    ("XAU", "GOLD", "Oro Spot: Activo de refugio institucional y tasas reales."),
+    ("XAG", "SILVER", "Plata Spot: Demanda industrial y metales preciosos."),
+    ("WTI", "ENERGY", "WTI Spot Oil: Petróleo crudo, inventarios y geopolítica en tiempo real.")
 ]
-render_category_ranking("Metales y Materias Primas (WTI)", metals_energy_pairs)
+render_single_asset_ranking("Metales y Energía (WTI Spot)", metals_energy_assets)
 
-# 3. Criptomonedas
-crypto_pairs = [
-    ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo y flujos ETF."),
-    ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Liquidez de criptoactivos.")
+# 3. Tabla de Ranking para Criptomonedas (Absolutas)
+crypto_assets = [
+    ("BTC", "CRYPTO", "Bitcoin: Apetito al riesgo global y flujos de mercado institucional."),
+    ("ETH", "CRYPTO", "Ethereum: Liquidez y adopción en ecosistema de criptoactivos.")
 ]
-render_category_ranking("Criptomonedas", crypto_pairs)
+render_single_asset_ranking("Criptomonedas", crypto_assets)
 
-# 4. Futuros e Índices
-futures_pairs = [
-    ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento bursátil global.")
+# 4. Tabla de Ranking para Futuros e Índices (Absolutos)
+futures_assets = [
+    ("US500", "INDEX", "S&P 500: Sentimiento bursátil y liquidez de renta variable global."),
+    ("VIX", "VOLATILITY", "Índice de Volatilidad: Miedo y aversión al riesgo en mercados globales.")
 ]
-render_category_ranking("Futuros e Índices", futures_pairs)
+render_single_asset_ranking("Futuros, Índices y Volatilidad", futures_assets)
 
 # --- SELECTOR DE TESIS INSTITUCIONAL ---
-all_pairs_flat = forex_pairs + metals_energy_pairs + crypto_pairs + futures_pairs
-sel_pair = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental:", [x[0] for x in all_pairs_flat])
-sel_thesis = next(x[2] for x in all_pairs_flat if x[0] == sel_pair)
-st.info(f"**Tesis Institucional ({sel_pair}):** {sel_thesis}")
+all_selectors = [x[0] for x in forex_pairs] + [x[0] for x in metals_energy_assets] + [x[0] for x in crypto_assets] + [x[0] for x in futures_assets]
+sel_asset = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental:", all_selectors)
+
+# Buscar la tesis correspondiente según el bloque
+def get_thesis(asset):
+    for p, r, t in forex_pairs:
+        if p == asset: return t
+    for a, r, t in metals_energy_assets:
+        if a == asset: return t
+    for a, r, t in crypto_assets:
+        if a == asset: return t
+    for a, r, t in futures_assets:
+        if a == asset: return t
+    return "Análisis macroeconómico institucional en curso."
+
+st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
 # --- FEED DE NOTICIAS ---
 st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
