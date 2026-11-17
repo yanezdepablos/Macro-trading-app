@@ -141,7 +141,7 @@ if not st.session_state.logged_in:
                 st.error("Usuario no registrado o inactivo.")
     st.stop()
 
-# --- INICIALIZACIÓN DE ESTADO PARA ESTABILIDAD DE PRECIOS ---
+# --- INICIALIZACIÓN DE ESTADO ESTABLE PARA PRECIOS ---
 if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
         'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
@@ -149,8 +149,8 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO (CON CACHÉ DE NOTICIAS PARA ESTABILIDAD) ---
-@st.cache_data(ttl=300) # Mantiene las noticias cacheadas 5 minutos para evitar fluctuaciones por clics en admin
+# --- MOTOR MULTIACTIVO AISLADO ---
+@st.cache_data(ttl=300)
 def fetch_real_macro_news_cached():
     rss_urls = [
         ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
@@ -253,14 +253,22 @@ def fetch_real_macro_news_cached():
 
 live_news_feed = fetch_real_macro_news_cached()
 
-target_scores = st.session_state.asset_scores_history.copy()
-for item in live_news_feed:
-    asset = item['currency']
-    if asset in target_scores:
-        target_scores[asset] += (item['impact'] * 0.35)
-        target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
+# Blindaje: Aplicar cambios de noticias solo de forma controlada sobre el estado actual
+if 'last_news_processed' not in st.session_state:
+    st.session_state.last_news_processed = len(live_news_feed)
+    target_scores = st.session_state.asset_scores_history.copy()
+    for item in live_news_feed:
+        asset = item['currency']
+        if asset in target_scores:
+            target_scores[asset] += (item['impact'] * 0.35)
+            target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
-alpha = 0.15
+    alpha = 0.15
+    for asset, old_score in st.session_state.asset_scores_history.items():
+        new_target = target_scores.get(asset, old_score)
+        smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
+        st.session_state.asset_scores_history[asset] = smoothed_score
+
 assets_data = {}
 region_map = {
     'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
@@ -268,11 +276,7 @@ region_map = {
     'XAU': 'GOLD', 'XAG': 'SILVER', 'WTI': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
 }
 
-for asset, old_score in st.session_state.asset_scores_history.items():
-    new_target = target_scores.get(asset, old_score)
-    smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
-    st.session_state.asset_scores_history[asset] = smoothed_score
-    
+for asset, smoothed_score in st.session_state.asset_scores_history.items():
     if smoothed_score >= 5.6:
         status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.12)"
     elif smoothed_score <= 4.4:
