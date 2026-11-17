@@ -129,7 +129,7 @@ if 'show_admin_panel' not in st.session_state:
     st.session_state.show_admin_panel = False
 
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 1.3, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("""
@@ -353,42 +353,28 @@ with st.sidebar:
     session_text = "🟢 LONDRES / NY" if 7 <= utc_h < 20 else "🟡 ASIA / RANGO"
     st.markdown(f"<div style='font-size: 11px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_text}</div>", unsafe_allow_html=True)
 
-# --- CABECERA PRINCIPAL CON BOTÓN DE MOSTRAR/OCULTAR ADMIN (SOLO PARA ADMIN) ---
+# --- CABECERA PRINCIPAL CON BOTÓN ADMIN INTEGRADO CORRECTAMENTE ---
 user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
 
-if st.session_state.is_admin:
-    col_h1, col_h2 = st.columns([4, 1])
-    with col_h1:
-        st.markdown(f"""
-            <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
-                    <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
-                </div>
-                <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
-                    {user_badge}
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col_h2:
-        btn_label = "🔒 Ocultar Admin" if st.session_state.show_admin_panel else "🔐 Panel Admin"
-        if st.button(btn_label, use_container_width=True):
-            st.session_state.show_admin_panel = not st.session_state.show_admin_panel
-            st.rerun()
-else:
-    st.markdown(f"""
-        <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div>
-                <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
-                <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
-            </div>
-            <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
-                {user_badge}
-            </div>
+st.markdown(f"""
+    <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+            <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
+            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
         </div>
-    """, unsafe_allow_html=True)
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
+            {user_badge}
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-# --- PANEL DE ADMINISTRACIÓN DESPLEGABLE DIRECTO EN PANTALLA ---
+if st.session_state.is_admin:
+    btn_label = "🔒 Ocultar Panel Admin" if st.session_state.show_admin_panel else "🔐 Abrir Panel Admin"
+    if st.button(btn_label, use_container_width=True):
+        st.session_state.show_admin_panel = not st.session_state.show_admin_panel
+        st.rerun()
+
+# --- PANEL DE ADMINISTRACIÓN DESPLEGABLE ---
 if st.session_state.is_admin and st.session_state.show_admin_panel:
     st.markdown("""
         <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(52, 211, 153, 0.4); padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
