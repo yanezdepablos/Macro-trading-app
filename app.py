@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilos CSS limpios, profesionales y 100% responsivos
+# Estilos CSS limpios y optimizados para PC y móvil
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -60,15 +60,6 @@ st.markdown("""
         margin-bottom: 12px;
         border-bottom: 1px solid rgba(52, 211, 153, 0.3);
         padding-bottom: 6px;
-    }
-
-    .stButton button {
-        background: #111827 !important;
-        color: #E5E7EB !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 12px !important;
     }
 
     .ranking-card {
@@ -329,7 +320,7 @@ for asset, smoothed_score in st.session_state.asset_scores_history.items():
         'bg': bg
     }
 
-# --- BARRA LATERAL (GESTIÓN DE RIESGO COMÚN) ---
+# --- BARRA LATERAL (GESTIÓN DE RIESGO) ---
 with st.sidebar:
     st.markdown("### 🧮 Gestión de Riesgo")
     account_balance = st.number_input("Balance ($)", value=10000.0, step=500.0)
@@ -353,7 +344,7 @@ with st.sidebar:
     session_text = "🟢 LONDRES / NY" if 7 <= utc_h < 20 else "🟡 ASIA / RANGO"
     st.markdown(f"<div style='font-size: 11px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_text}</div>", unsafe_allow_html=True)
 
-# --- CABECERA PRINCIPAL CON BOTÓN ADMIN INTEGRADO CORRECTAMENTE ---
+# --- CABECERA PRINCIPAL ---
 user_badge = f"👑 {st.session_state.username}" if st.session_state.is_admin else f"🛡️ {st.session_state.username}"
 
 st.markdown(f"""
@@ -368,52 +359,54 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
+# Botón de alternancia de administración totalmente aislado
 if st.session_state.is_admin:
-    btn_label = "🔒 Ocultar Panel Admin" if st.session_state.show_admin_panel else "🔐 Abrir Panel Admin"
-    if st.button(btn_label, use_container_width=True):
+    btn_text = "🔒 Cerrar Panel Admin SaaS" if st.session_state.show_admin_panel else "🔐 Abrir Panel Admin SaaS"
+    if st.button(btn_text, use_container_width=True):
         st.session_state.show_admin_panel = not st.session_state.show_admin_panel
         st.rerun()
 
-# --- PANEL DE ADMINISTRACIÓN DESPLEGABLE ---
+# --- PANEL DE ADMINISTRACIÓN SAAS (CONTENEDOR NATIVO SEGURO) ---
 if st.session_state.is_admin and st.session_state.show_admin_panel:
-    st.markdown("""
-        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(52, 211, 153, 0.4); padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
-            <h3 style="color: #34D399; margin-top: 0; font-size: 15px; font-weight: 800; letter-spacing: 0.05em;">🔐 PANEL DE ADMINISTRACIÓN SAAS</h3>
-    """, unsafe_allow_html=True)
-    
-    col_adm1, col_adm2 = st.columns([1, 1])
-    with col_adm1:
-        new_client = st.text_input("Usuario del Cliente", key="admin_new_client")
-        new_pass = st.text_input("Contraseña del Cliente", type="password", key="admin_new_pass")
-        days_valid = st.number_input("Días de Suscripción", value=30, step=1, key="admin_days")
+    with st.container():
+        st.markdown("""
+            <div style="background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(52, 211, 153, 0.4); padding: 25px; border-radius: 14px; margin-top: 15px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                <h3 style="color: #34D399; margin-top: 0; font-size: 16px; font-weight: 800; letter-spacing: 0.05em;">🔐 PANEL DE ADMINISTRACIÓN SAAS</h3>
+        """, unsafe_allow_html=True)
         
-        if st.button("Crear / Renovar Licencia", use_container_width=True):
-            if new_client and new_pass:
-                expiry = (datetime.date.today() + datetime.timedelta(days=int(days_valid))).strftime("%Y-%m-%d")
-                conn = sqlite3.connect('macro_licenses.db')
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO users (username, password, expiry_date, is_admin)
-                    VALUES (?, ?, ?, 0)
-                    ON CONFLICT(username) DO UPDATE SET password=excluded.password, expiry_date=excluded.expiry_date
-                ''', (new_client, new_pass, expiry))
-                conn.commit()
-                conn.close()
-                st.success(f"¡Licencia creada con éxito para {new_client} hasta el {expiry}!")
-            else:
-                st.warning("Por favor completa el usuario y la contraseña.")
-                
-    with col_adm2:
-        st.markdown("<p style='font-size: 13px; font-weight: bold; color: #E5E7EB; margin-bottom: 8px;'>Clientes Registrados:</p>", unsafe_allow_html=True)
-        conn = sqlite3.connect('macro_licenses.db')
-        df_users = pd.read_sql_query("SELECT username, expiry_date FROM users WHERE is_admin = 0", conn)
-        conn.close()
-        if not df_users.empty:
-            st.dataframe(df_users, use_container_width=True, height=150)
-        else:
-            st.info("No hay clientes registrados aún.")
+        col_adm1, col_adm2 = st.columns(2, gap="large")
+        with col_adm1:
+            new_client = st.text_input("Usuario del Cliente", key="admin_new_client")
+            new_pass = st.text_input("Contraseña del Cliente", type="password", key="admin_new_pass")
+            days_valid = st.number_input("Días de Suscripción", value=30, step=1, key="admin_days")
             
-    st.markdown("</div>", unsafe_allow_html=True)
+            if st.button("Crear / Renovar Licencia", use_container_width=True):
+                if new_client and new_pass:
+                    expiry = (datetime.date.today() + datetime.timedelta(days=int(days_valid))).strftime("%Y-%m-%d")
+                    conn = sqlite3.connect('macro_licenses.db')
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO users (username, password, expiry_date, is_admin)
+                        VALUES (?, ?, ?, 0)
+                        ON CONFLICT(username) DO UPDATE SET password=excluded.password, expiry_date=excluded.expiry_date
+                    ''', (new_client, new_pass, expiry))
+                    conn.commit()
+                    conn.close()
+                    st.success(f"¡Licencia creada con éxito para {new_client} hasta el {expiry}!")
+                else:
+                    st.warning("Por favor completa el usuario y la contraseña.")
+                    
+        with col_adm2:
+            st.markdown("<p style='font-size: 13px; font-weight: bold; color: #E5E7EB; margin-bottom: 8px;'>Clientes Registrados:</p>", unsafe_allow_html=True)
+            conn = sqlite3.connect('macro_licenses.db')
+            df_users = pd.read_sql_query("SELECT username, expiry_date FROM users WHERE is_admin = 0", conn)
+            conn.close()
+            if not df_users.empty:
+                st.dataframe(df_users, use_container_width=True, height=180)
+            else:
+                st.info("No hay clientes registrados aún.")
+                
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- MATRICES POR CATEGORÍA ---
 def render_group(title, keys):
