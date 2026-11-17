@@ -247,4 +247,164 @@ if not st.session_state.logged_in:
                 <h2 style="color: white; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px;">MACRO EDGE FX</h2>
                 <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 30px;">Terminal Multiactivo Institucional</p>
             </div>
-        """,
+        """, unsafe_allow_html=True)
+        
+        st.text_input("Usuario", value="yanezdepablos", disabled=True)
+        pass_input = st.text_input("Contraseña de Acceso", type="password", placeholder="Introduce la contraseña...")
+        
+        if st.button("ACCEDER A LA TERMINAL", use_container_width=True):
+            if pass_input == "32157532Ca.$":
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("Contraseña incorrecta. Inténtalo de nuevo.")
+    st.stop()
+
+assets_data, live_news_feed = fetch_real_macro_news()
+
+# --- BARRA LATERAL: GESTIÓN DE RIESGO ---
+with st.sidebar:
+    st.markdown("### 🧮 Gestión de Riesgo")
+    account_balance = st.number_input("Balance de Cuenta ($)", value=10000.0, step=500.0)
+    risk_pct = st.slider("Riesgo por Operación (%)", 0.1, 3.0, 1.0, 0.1)
+    sl_pips = st.number_input("Stop Loss Estimado (Pips)", value=25.0, step=5.0)
+    
+    risk_amount = account_balance * (risk_pct / 100.0)
+    recommended_lots = risk_amount / (sl_pips * 10.0)
+    
+    st.markdown(f"""
+        <div style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); padding: 12px; border-radius: 10px; margin-top: 15px;">
+            <p style="margin: 0; font-size: 11px; color: #34D399; font-weight: bold;">MÉTRICA DE RIESGO:</p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #FFFFFF;">Riesgo Monetario: <b>${risk_amount:.2f}</b></p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #34D399; font-weight: bold;">Lote Sugerido: {recommended_lots:.2f} Lotes</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🕒 Sesión Activa (Killzones)")
+    
+    current_utc_hour = datetime.datetime.utcnow().hour
+    if 7 <= current_utc_hour < 15:
+        session_name = "🟢 LONDRES (Alta Liquidez)"
+    elif 12 <= current_utc_hour < 20:
+        session_name = "🟢 NUEVA YORK (Solapamiento Principal)"
+    elif 0 <= current_utc_hour < 8:
+        session_name = "🟡 TOKIO / ASIÁTICA"
+    else:
+        session_name = "⚪ RANGO / BAJA LIQUIDEZ"
+        
+    st.markdown(f"<div style='font-size: 12px; color: #E5E7EB; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;'>{session_name}</div>", unsafe_allow_html=True)
+
+# --- TERMINAL PRINCIPAL ---
+header_top_html = """
+    <div style="background: rgba(13, 17, 23, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); padding: 18px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
+            <div>
+                <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX — MULTIACTIVO</span>
+                <span style="font-size: 10px; color: #34D399; font-family: monospace; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 7px; height: 7px; background-color: #34D399; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #34D399;"></span> VISTA SEPARADA POR CATEGORÍAS
+                </span>
+            </div>
+        </div>
+        <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(255,255,255,0.03); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+            👤 yanezdepablos
+        </div>
+    </div>
+"""
+st.markdown(header_top_html, unsafe_allow_html=True)
+
+# Reloj UTC dinámico
+clock_component_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { background-color: transparent; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; }
+        .clock-box {
+            font-family: monospace; font-size: 14px; color: #34D399;
+            background: rgba(52,211,153,0.08); padding: 10px 20px; border-radius: 8px;
+            border: 1px solid rgba(52,211,153,0.2); text-shadow: 0 0 8px rgba(52,211,153,0.5);
+            letter-spacing: 0.05em; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-box" id="utc-clock">🕒 Sincronizando UTC...</div>
+    <script>
+        function updateUTC() {
+            const now = new Date();
+            const utcString = now.toUTCString().split(' ')[4];
+            document.getElementById('utc-clock').innerText = "🕒 " + utcString + " UTC";
+        }
+        setInterval(updateUTC, 1000);
+        updateUTC();
+    </script>
+</body>
+</html>
+"""
+components.html(clock_component_html, height=50)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# --- MATRICES SEPARADAS POR SECCIÓN ---
+
+def render_asset_group(title_text, asset_keys):
+    st.markdown(f'<div class="section-title">{title_text}</div>', unsafe_allow_html=True)
+    cols = st.columns(min(len(asset_keys), 6))
+    for idx, asset in enumerate(asset_keys):
+        if asset in assets_data:
+            data = assets_data[asset]
+            with cols[idx % 6]:
+                st.markdown(f"""
+                    <div class="neon-card" style="margin-bottom: 10px;">
+                        <div style="font-size: 9px; font-weight: 700; color: #6B7280; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; font-family: monospace;">{data['region']}</div>
+                        <div style="font-size: 12px; font-weight: 800; color: #9CA3AF; margin-bottom: 4px; letter-spacing: 0.05em;">{asset}</div>
+                        <div style="font-size: 20px; font-weight: 900; color: #FFFFFF; margin-bottom: 6px; font-family: monospace;">{data['score']:.1f}</div>
+                        <div style="font-size: 8px; font-weight: 700; color: {data['color']}; background: {data['bg']}; padding: 2px 5px; border-radius: 6px; display: inline-block; border: 1px solid {data['color']}33;">{data['status']}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+# 1. Divisas
+render_asset_group("💱 Divisas Principales y Cruzadas", ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SEK', 'NOK', 'SGD', 'ZAR'])
+
+# 2. Metales y Energía
+render_asset_group("🥇 Metales y Materias Primas (Energía)", ['XAU', 'XAG', 'OIL'])
+
+# 3. Criptomonedas
+render_asset_group("🪙 Criptomonedas", ['BTC', 'ETH'])
+
+# 4. Futuros e Índices
+render_asset_group("📈 Futuros, Índices y Volatilidad", ['US500', 'VIX'])
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# --- RANKING DE PARES Y ACTIVOS (ORDENADO STRICTAMENTE DE MAYOR A MENOR PROBABILIDAD) ---
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Multiactivo (Ordenado de Mayor a Menor Probabilidad)</p>", unsafe_allow_html=True)
+
+pairs_raw = [
+    ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Flujos de refugio institucional y tasas reales de la Fed."),
+    ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo global y flujos institucionales ETF."),
+    ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y correlación con metales preciosos."),
+    ("OIL/USD", "ENERGY/USA", "Petróleo Crudo vs Dólar: Geopolítica, inventarios y oferta global."),
+    ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Dinámica de adopción tecnológica y liquidez de criptoactivos."),
+    ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
+    ("GBP/USD", "GBR/USA", "Libra vs Dólar: Datos de empleo e inflación británica."),
+    ("USD/JPY", "USA/JPN", "Dólar vs Yen: Divergencia de tipos de interés Fed vs Banco de Japón."),
+    ("AUD/USD", "AUS/USA", "Australiano vs Dólar: Materias primas y ciclo de demanda asiática."),
+    ("USD/CAD", "USA/CAN", "Dólar vs Canadiense: Correlación directa con flujos petroleros."),
+    ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento de riesgo bursátil global."),
+    ("EUR/GBP", "EUR/GBR", "Cruce estructural europeo de baja volatilidad relative.")
+]
+
+table_data = []
+for pair, region, thesis in pairs_raw:
+    base, quote = pair.split('/')
+    b_score = assets_data.get(base, {'score': 5.0})['score']
+    q_score = assets_data.get(quote, {'score': 5.0})['score']
+    delta = b_score - q_score
+    
+    direction = "BUY" if delta > 0.3 else ("SELL" if delta < -0.3 else "NEUTRAL")
+    dir_color = "#34D399" if direction == "BUY" else ("#EF4444" if direction == "SELL" else "#FBBF24")
+    
+    
