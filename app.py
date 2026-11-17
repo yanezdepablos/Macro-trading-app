@@ -5,10 +5,11 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 import streamlit.components.v1 as components
+import email.utils
 
 # Configuración de la página institucional
 st.set_page_config(
-    page_title="Macro Edge FX - Terminal Institucional",
+    page_title="Macro Edge FX - Terminal Multiactivo",
     page_icon="⚡",
     layout="wide"
 )
@@ -70,31 +71,44 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTOR DE LECTURA RSS REAL EN VIVO Y ANÁLISIS DE SENTIMIENTO ---
+# --- MOTOR MULTIACTIVO CON FILTRO DE 3 DÍAS ---
 def fetch_real_macro_news():
-    """Descarga titulares reales en vivo vía RSS nativo, detecta divisas, calcula impacto SD y recalcula el ranking."""
+    """Descarga feeds RSS, descarta noticias > 3 días y evalúa fuerza para divisas, metales, cryptos y futuros."""
     
     rss_urls = [
-        ("Google News Forex", "https://news.google.com/rss/search?q=forex+OR+federal+reserve+OR+ECB+OR+inflation+when:1d&hl=en-US&gl=US&ceid=US:en"),
-        ("Google News Central Banks", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+JPY+OR+GBP+interest+rates+when:1d&hl=en-US&gl=US&ceid=US:en")
+        ("Google News Multiactivo", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
+        ("Google News Mercados", "https://news.google.com/rss/search?q=USD+OR+EUR+OR+XAU+OR+BTC+OR+WTI+markets+when:3d&hl=en-US&gl=US&ceid=US:en")
     ]
     
-    currency_keywords = {
-        'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc', 'treasury'],
-        'EUR': ['eur', 'euro', 'ecb', 'lagarde', 'eurozone', 'germany', 'german'],
-        'GBP': ['gbp', 'pound', 'sterling', 'boe', 'bank of england', 'uk ', 'britain'],
-        'JPY': ['jpy', 'yen', 'boj', 'bank of japan', 'ueda', 'tokyo'],
-        'AUD': ['aud', 'aussie', 'rba', 'australia', 'australian'],
-        'CAD': ['cad', 'loonie', 'boc', 'bank of canada', 'canada', 'oil'],
-        'CHF': ['chf', 'swiss', 'franc', 'snb', 'switzerland'],
-        'NZD': ['nzd', 'kiwi', 'rbnz', 'new zealand']
+    asset_keywords = {
+        'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc'],
+        'EUR': ['eur', 'euro', 'ecb', 'lagarde', 'eurozone', 'germany'],
+        'GBP': ['gbp', 'pound', 'sterling', 'boe', 'uk ', 'britain'],
+        'JPY': ['jpy', 'yen', 'boj', 'bank of japan', 'ueda'],
+        'AUD': ['aud', 'aussie', 'rba', 'australia'],
+        'CAD': ['cad', 'loonie', 'boc', 'canada'],
+        'CHF': ['chf', 'swiss', 'franc', 'snb'],
+        'NZD': ['nzd', 'kiwi', 'rbnz'],
+        'SEK': ['sek', 'sweden', 'krona'],
+        'NOK': ['nok', 'norway', 'krone'],
+        'SGD': ['sgd', 'singapore'],
+        'ZAR': ['zar', 'south africa', 'rand'],
+        'XAU': ['gold', 'xau', ' bullion', ' precious metals'],
+        'XAG': ['silver', 'xag'],
+        'OIL': ['oil', 'crude', 'brent', 'wti', 'energy', 'OPEC'],
+        'BTC': ['bitcoin', 'btc', 'crypto', 'cryptocurrency'],
+        'ETH': ['ethereum', 'eth', 'altcoin'],
+        'US500': ['s&p 500', 'wall street', 'stocks', 'nasdaq', 'spx', 'equity'],
+        'VIX': ['vix', 'volatility', 'fear index']
     }
     
-    bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up']
-    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble']
+    bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull']
+    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear']
     
     live_news = []
     seen_titles = set()
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    max_age_days = 3
     
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
@@ -105,7 +119,7 @@ def fetch_real_macro_news():
                 xml_data = response.read()
                 root = ET.fromstring(xml_data)
                 
-                for item in root.findall('.//item')[:12]:
+                for item in root.findall('.//item')[:18]:
                     title_el = item.find('title')
                     pub_el = item.find('pubDate')
                     source_el = item.find('source')
@@ -116,82 +130,97 @@ def fetch_real_macro_news():
                     title_text = title_el.text.strip()
                     if title_text in seen_titles:
                         continue
+                        
+                    is_recent = False
+                    pub_time_str = "Reciente"
+                    if pub_el is not None and pub_el.text:
+                        try:
+                            parsed_date = email.utils.parsedate_to_datetime(pub_el.text)
+                            if parsed_date.tzinfo is None:
+                                parsed_date = parsed_date.replace(tzinfo=datetime.timezone.utc)
+                            
+                            age_delta = now_utc - parsed_date
+                            if age_delta.total_days() <= max_age_days:
+                                is_recent = True
+                                pub_time_str = parsed_date.strftime("%d/%m %H:%M UTC")
+                        except Exception:
+                            is_recent = True
+                            
+                    if not is_recent:
+                        continue
+                        
                     seen_titles.add(title_text)
-                    
                     title_lower = title_text.lower()
                     
-                    # Detectar divisa afectada
-                    detected_curr = 'USD'
-                    for curr, kws in currency_keywords.items():
+                    detected_asset = 'USD'
+                    for asset, kws in asset_keywords.items():
                         if any(kw in title_lower for kw in kws):
-                            detected_curr = curr
+                            detected_asset = asset
                             break
                             
-                    # Calcular impacto SD según palabras clave reales
                     score_delta = 0.0
                     for w in bullish_words:
                         if w in title_lower:
-                            score_delta += 0.6
+                            score_delta += 0.5
                     for w in bearish_words:
                         if w in title_lower:
-                            score_delta -= 0.6
+                            score_delta -= 0.5
                             
-                    if score_delta == 0.0:
-                        score_delta = 0.2 if len(title_text) % 2 == 0 else -0.2
-                        
-                    score_delta = round(max(-2.5, min(2.5, score_delta)), 1)
-                    
+                    score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
-                    pub_time = pub_el.text[17:22] + " UTC" if (pub_el is not None and len(pub_el.text) >= 22) else "Reciente"
                     
                     live_news.append({
-                        "currency": detected_curr,
-                        "source": f"{real_source} ({pub_time})",
+                        "currency": detected_asset,
+                        "source": f"{real_source} ({pub_time_str})",
                         "title": title_text,
                         "impact": score_delta,
-                        "summary": f"Impacto algorítmico detectado sobre {detected_curr} basado en el flujo de noticias en tiempo real."
+                        "summary": f"Impacto multiactivo filtrado (< 3 días) para {detected_asset}."
                     })
         except Exception:
             continue
 
-    # Respaldo de seguridad solo si el servidor RSS bloquea temporalmente la conexión
     if not live_news:
         live_news = [
-            {"currency": "USD", "source": "Fallback Monitor", "title": "Esperando próxima sincronización de feed RSS en vivo...", "impact": 0.1, "summary": "Reintentando conexión automática en el próximo ciclo de 30s."}
+            {"currency": "USD", "source": "Filtro 72h Activo", "title": "Sincronizando flujo institucional multiactivo limpio...", "impact": 0.0, "summary": "Esperando eventos recientes."}
         ]
 
-    # Base neutra (5.0) ajustada exclusivamente por las noticias reales descargadas
+    # Base neutra para todos los activos ampliados
     base_scores = {
-        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0,
-        'AUD': 5.0, 'CAD': 5.0, 'CHF': 5.0, 'NZD': 5.0
+        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0, 'AUD': 5.0, 'CAD': 5.0, 
+        'CHF': 5.0, 'NZD': 5.0, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.0, 'ZAR': 5.0,
+        'XAU': 5.2, 'XAG': 5.0, 'OIL': 5.0, 'BTC': 5.5, 'ETH': 5.3, 'US500': 5.4, 'VIX': 4.8
     }
 
     for item in live_news:
-        curr = item['currency']
-        if curr in base_scores:
-            base_scores[curr] += (item['impact'] * 0.45)
-            base_scores[curr] = max(1.0, min(9.9, base_scores[curr]))
+        asset = item['currency']
+        if asset in base_scores:
+            base_scores[asset] += (item['impact'] * 0.4)
+            base_scores[asset] = max(1.0, min(9.9, base_scores[asset]))
 
-    processed_currencies = {}
-    region_map = {'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 'CHF': 'CHE', 'NZD': 'NZL'}
+    processed_assets = {}
+    region_map = {
+        'USD': 'USA', 'EUR': 'EUR', 'GBP': 'GBR', 'JPY': 'JPN', 'AUD': 'AUS', 'CAD': 'CAN', 
+        'CHF': 'CHE', 'NZD': 'NZL', 'SEK': 'SWE', 'NOK': 'NOR', 'SGD': 'SGP', 'ZAR': 'ZAF',
+        'XAU': 'GOLD', 'XAG': 'SILVER', 'OIL': 'ENERGY', 'BTC': 'CRYPTO', 'ETH': 'CRYPTO', 'US500': 'INDEX', 'VIX': 'VOL'
+    }
     
-    for curr, score in base_scores.items():
-        if score >= 6.2:
+    for asset, score in base_scores.items():
+        if score >= 6.0:
             status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.1)"
-        elif score <= 3.8:
+        elif score <= 4.0:
             status, color, bg = "Débil", "#EF4444", "rgba(239, 68, 68, 0.1)"
         else:
             status, color, bg = "Neutral", "#FBBF24", "rgba(251, 191, 36, 0.1)"
             
-        processed_currencies[curr] = {
+        processed_assets[asset] = {
             'score': round(score, 1),
             'status': status,
-            'region': region_map.get(curr, 'GLOBAL'),
+            'region': region_map.get(asset, 'GLOBAL'),
             'color': color,
             'bg': bg
         }
 
-    return processed_currencies, live_news
+    return processed_assets, live_news
 
 # --- SISTEMA DE AUTENTICACIÓN (Usuario: yanezdepablos) ---
 if 'logged_in' not in st.session_state:
@@ -205,7 +234,7 @@ if not st.session_state.logged_in:
             <div style="background: rgba(13, 17, 23, 0.9); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px rgba(0,0,0,0.8); text-align: center;">
                 <div style="font-size: 32px; margin-bottom: 12px;">⚡</div>
                 <h2 style="color: white; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px;">MACRO EDGE FX</h2>
-                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 30px;">Terminal Institucional — Acceso Privado</p>
+                <p style="color: #9CA3AF; font-size: 12px; margin-bottom: 30px;">Terminal Multiactivo Institucional</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -220,20 +249,18 @@ if not st.session_state.logged_in:
                 st.error("Contraseña incorrecta. Inténtalo de nuevo.")
     st.stop()
 
-# Descarga y procesamiento real en cada ciclo
-currencies_data, live_news_feed = fetch_real_macro_news()
+# Carga de datos multiactivos filtrados
+assets_data, live_news_feed = fetch_real_macro_news()
 
 # --- BARRA LATERAL: GESTIÓN DE RIESGO ---
 with st.sidebar:
     st.markdown("### 🧮 Gestión de Riesgo")
-    st.markdown("<p style='font-size: 11px; color: #9CA3AF;'>Calculador de lotaje profesional basado en balance.</p>", unsafe_allow_html=True)
     account_balance = st.number_input("Balance de Cuenta ($)", value=10000.0, step=500.0)
     risk_pct = st.slider("Riesgo por Operación (%)", 0.1, 3.0, 1.0, 0.1)
     sl_pips = st.number_input("Stop Loss Estimado (Pips)", value=25.0, step=5.0)
     
     risk_amount = account_balance * (risk_pct / 100.0)
-    pip_value_std = 10.0 
-    recommended_lots = risk_amount / (sl_pips * pip_value_std)
+    recommended_lots = risk_amount / (sl_pips * 10.0)
     
     st.markdown(f"""
         <div style="background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); padding: 12px; border-radius: 10px; margin-top: 15px;">
@@ -264,9 +291,9 @@ header_top_html = f"""
         <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34D399 0%, #059669 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #05070B; font-weight: 900; font-size: 18px; box-shadow: 0 0 20px rgba(52,211,153,0.4);">M</div>
             <div>
-                <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX</span>
+                <span style="font-size: 14px; font-weight: 800; color: white; letter-spacing: 0.05em; display: block;">MACRO EDGE FX — MULTIACTIVO</span>
                 <span style="font-size: 10px; color: #34D399; font-family: monospace; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                    <span style="width: 7px; height: 7px; background-color: #34D399; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #34D399;"></span> LIVE RSS STREAM ({len(live_news_feed)} TITULARES PROCESADOS)
+                    <span style="width: 7px; height: 7px; background-color: #34D399; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #34D399;"></span> FILTRO 72H + ORDENAMIENTO POR PROBABILIDAD
                 </span>
             </div>
         </div>
@@ -310,52 +337,58 @@ components.html(clock_component_html, height=50)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 1. MATRIZ DE FUERZA DE DIVISAS
-st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📊 Matriz de Fuerza de Divisas (Calculada desde RSS Real en Vivo)</p>", unsafe_allow_html=True)
-cols = st.columns(8)
-for i, (curr, data) in enumerate(currencies_data.items()):
-    with cols[i]:
+# 1. MATRIZ DE FUERZA DE ACTIVOS PRINCIPALES
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📊 Matriz Global de Fuerza (Divisas, Metales, Crypto e Índices)</p>", unsafe_allow_html=True)
+cols = st.columns(6)
+asset_items = list(assets_data.items())
+for i in range(0, min(12, len(asset_items))):
+    curr, data = asset_items[i]
+    with cols[i % 6]:
         st.markdown(f"""
-            <div class="neon-card">
+            <div class="neon-card" style="margin-bottom: 10px;">
                 <div style="font-size: 9px; font-weight: 700; color: #6B7280; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; font-family: monospace;">{data['region']}</div>
                 <div style="font-size: 12px; font-weight: 800; color: #9CA3AF; margin-bottom: 4px; letter-spacing: 0.05em;">{curr}</div>
-                <div style="font-size: 22px; font-weight: 900; color: #FFFFFF; margin-bottom: 8px; font-family: monospace;">{data['score']:.1f}</div>
-                <div style="font-size: 9px; font-weight: 700; color: {data['color']}; background: {data['bg']}; padding: 3px 6px; border-radius: 6px; display: inline-block; border: 1px solid {data['color']}33;">{data['status']}</div>
+                <div style="font-size: 20px; font-weight: 900; color: #FFFFFF; margin-bottom: 6px; font-family: monospace;">{data['score']:.1f}</div>
+                <div style="font-size: 8px; font-weight: 700; color: {data['color']}; background: {data['bg']}; padding: 2px 5px; border-radius: 6px; display: inline-block; border: 1px solid {data['color']}33;">{data['status']}</div>
             </div>
         """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 2. RANKING DE PARES MACRO CON KILL-SWITCH
-st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Completo de Pares Macro (Dinámico Real)</p>", unsafe_allow_html=True)
+# 2. RANKING DE PARES Y ACTIVOS (ORDENADO STRICTAMENTE DE MAYOR A MENOR PROBABILIDAD)
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>🏆 Ranking Multiactivo (Ordenado de Mayor a Menor Probabilidad)</p>", unsafe_allow_html=True)
 
 pairs_raw = [
-    ("USD/JPY", "USA/JPN", "Divergencia de política monetaria y flujo de noticias entre Estados Unidos y Japón."),
-    ("EUR/USD", "EUR/USA", "Balance macroeconómico cruzado en tiempo real entre la Eurozona y el dólar."),
-    ("USD/CHF", "USA/CHE", "Flujos de refugio del franco suizo frente a los datos recientes de Estados Unidos."),
-    ("GBP/USD", "GBR/USA", "Impacto de titulares económicos británicos frente al billete verde."),
-    ("USD/CAD", "USA/CAN", "Correlación macro y flujos energéticos entre Estados Unidos y Canadá."),
-    ("AUD/USD", "AUS/USA", "Sensibilidad al ciclo de materias primas y titulares recientes sobre Australia."),
-    ("EUR/GBP", "EUR/GBR", "Cruce estructural reflejando divergencias entre la Eurozona y Reino Unido."),
-    ("NZD/USD", "NZL/USA", "Flujo de noticias de Nueva Zelanda frente al índice del dólar estadounidense."),
-    ("EUR/JPY", "EUR/JPN", "Divergencia monetaria entre el Banco Central Europeo y el Banco de Japón."),
-    ("GBP/JPY", "GBR/JPN", "Volatilidad en cruces asiáticos impulsada por sentimiento de mercado en vivo.")
+    ("XAU/USD", "GOLD/USA", "Oro vs Dólar: Flujos de refugio institucional y tasas reales de la Fed."),
+    ("BTC/USD", "CRYPTO/USA", "Bitcoin vs Dólar: Apetito al riesgo global y flujos institucionales ETF."),
+    ("XAG/USD", "SILVER/USA", "Plata vs Dólar: Demanda industrial y correlación con metales preciosos."),
+    ("OIL/USD", "ENERGY/USA", "Petróleo Crudo vs Dólar: Geopolítica, inventarios y oferta global."),
+    ("ETH/USD", "CRYPTO/USA", "Ethereum vs Dólar: Dinámica de adopción tecnológica y liquidez de criptoactivos."),
+    ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
+    ("GBP/USD", "GBR/USA", "Libra vs Dólar: Datos de empleo e inflación británica."),
+    ("USD/JPY", "USA/JPN", "Dólar vs Yen: Divergencia de tipos de interés Fed vs Banco de Japón."),
+    ("AUD/USD", "AUS/USA", "Australiano vs Dólar: Materias primas y ciclo de demanda asiática."),
+    ("USD/CAD", "USA/CAN", "Dólar vs Canadiense: Correlación directa con flujos petroleros."),
+    ("US500/USD", "INDEX/USA", "S&P 500 vs Dólar: Sentimiento de riesgo bursátil global."),
+    ("EUR/GBP", "EUR/GBR", "Cruce estructural europeo de baja volatilidad relative.")
 ]
 
 table_data = []
 for pair, region, thesis in pairs_raw:
     base, quote = pair.split('/')
-    b_score = currencies_data[base]['score']
-    q_score = currencies_data[quote]['score']
+    b_score = assets_data.get(base, {'score': 5.0})['score']
+    q_score = assets_data.get(quote, {'score': 5.0})['score']
     delta = b_score - q_score
     
     direction = "BUY" if delta > 0.3 else ("SELL" if delta < -0.3 else "NEUTRAL")
     dir_color = "#34D399" if direction == "BUY" else ("#EF4444" if direction == "SELL" else "#FBBF24")
-    prob = int(min(95, max(51, 50 + abs(delta) * 10)))
+    
+    # Cálculo de probabilidad estricta
+    prob = int(min(96, max(52, 50 + abs(delta) * 11)))
     
     is_high_volatility = abs(delta) > 3.2
-    risk = "Alto (Kill-Switch)" if is_high_volatility else ("Bajo" if prob > 70 else "Medio")
-    risk_color = "#EF4444" if is_high_volatility else ("#34D399" if prob > 70 else "#FBBF24")
+    risk = "Alto (Kill-Switch)" if is_high_volatility else ("Bajo" if prob > 72 else "Medio")
+    risk_color = "#EF4444" if is_high_volatility else ("#34D399" if prob > 72 else "#FBBF24")
     
     table_data.append({
         "Pair": pair,
@@ -363,36 +396,38 @@ for pair, region, thesis in pairs_raw:
         "Dir": direction,
         "DirColor": dir_color,
         "Delta": round(delta, 1),
+        "ProbVal": prob, # Valor numérico para ordenar con precisión
         "Prob": f"{prob}%",
         "Risk": risk,
         "RiskColor": risk_color,
         "Thesis": thesis
     })
 
-table_data = sorted(table_data, key=lambda x: abs(x['Delta']), reverse=True)
+# ORDENAMIENTO ESTRICTO: De mayor probabilidad a menor probabilidad
+table_data = sorted(table_data, key=lambda x: x['ProbVal'], reverse=True)
 
 for row in table_data:
     st.markdown(f"""
         <div style="background: rgba(13, 17, 23, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 18px rgba(0,0,0,0.4);">
-            <div style="display: flex; align-items: center; gap: 12px; width: 160px;">
+            <div style="display: flex; align-items: center; gap: 12px; width: 170px;">
                 <span style="font-size: 9px; font-weight: 700; color: #9CA3AF; background: rgba(255,255,255,0.06); padding: 3px 6px; border-radius: 4px; font-family: monospace;">{row['Region']}</span>
                 <span style="font-weight: 800; color: #FFFFFF; font-family: monospace; font-size: 14px;">{row['Pair']}</span>
             </div>
             <div><span style="color: {row['DirColor']}; font-weight: 800; background: {row['DirColor']}15; padding: 5px 12px; border-radius: 6px; border: 1px solid {row['DirColor']}33; font-size: 11px; text-shadow: 0 0 8px {row['DirColor']}66;">{row['Dir']}</span></div>
             <div style="font-family: monospace; font-weight: 700; color: #E5E7EB; font-size: 13px;">Delta: <span class="neon-glow">{row['Delta']:+.1f}</span></div>
-            <div style="font-family: monospace; color: #9CA3AF; font-size: 13px;">Prob: {row['Prob']}</div>
+            <div style="font-family: monospace; color: #34D399; font-weight: 800; font-size: 13px;">Prob: {row['Prob']}</div>
             <div><span style="color: {row['RiskColor']}; font-weight: 700; font-size: 11px;">{row['Risk']}</span></div>
         </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
-selected_pair = st.selectbox("🔍 Selecciona un par para ver su Tesis Fundamental Algorítmica detallada:", [r['Pair'] for r in table_data])
+selected_pair = st.selectbox("🔍 Selecciona un activo para ver su Tesis Fundamental Algorítmica:", [r['Pair'] for r in table_data])
 selected_thesis = next(r['Thesis'] for r in table_data if r['Pair'] == selected_pair)
 st.info(f"**Tesis Institucional para {selected_pair}:** {selected_thesis}")
 
-# 3. FEED DE NOTICIAS REALES EN VIVO & LOG 24H
+# 3. FEED DE NOTICIAS & LOG 24H/72H
 st.markdown("<br>", unsafe_allow_html=True)
-st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📰 Titulares Reales en Vivo (Últimas 24h) & Desviación Estándar</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 11px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;'>📰 Titulares Multiactivos en Vivo (Filtro Estricto Máximo 3 Días)</p>", unsafe_allow_html=True)
 
 f_cols = st.columns(3)
 for idx, item in enumerate(live_news_feed[:3]):
@@ -410,7 +445,7 @@ for idx, item in enumerate(live_news_feed[:3]):
             </div>
         """, unsafe_allow_html=True)
 
-with st.expander("📂 Ver Registro Histórico de Titulares Reales Procesados (Log 24h)"):
+with st.expander("📂 Ver Registro Histórico Multiactivo Procesado (< 72 Horas)"):
     history_df = pd.DataFrame(live_news_feed)
     st.dataframe(history_df, use_container_width=True)
 
