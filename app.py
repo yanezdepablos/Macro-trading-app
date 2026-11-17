@@ -85,10 +85,10 @@ def init_db():
             is_admin INTEGER DEFAULT 0
         )
     ''')
-    # Corregido: INSERT OR IGNORE
+    # Actualización de contraseña maestra para yanezdepablos
     cursor.execute('''
-        INSERT OR IGNORE INTO users (username, password, expiry_date, is_admin)
-        VALUES ('yanezdepablos', '32157532Ca.$', '2099-12-31', 1)
+        INSERT OR REPLACE INTO users (username, password, expiry_date, is_admin)
+        VALUES ('yanezdepablos', '32157532Ca', '2099-12-31', 1)
     ''')
     conn.commit()
     conn.close()
