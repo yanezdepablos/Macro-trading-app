@@ -109,7 +109,7 @@ if not st.session_state.logged_in:
         st.markdown("""
             <div style="background: linear-gradient(145deg, rgba(13, 17, 23, 0.95), rgba(7, 9, 14, 0.98)); 
                         padding: 40px 30px; border-radius: 18px; border: 1px solid rgba(52, 211, 153, 0.2); 
-                        box-align: center; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <div style="font-size: 32px; margin-bottom: 8px;">⚡</div>
                 <h2 style="color: white; font-weight: 900; letter-spacing: 0.05em; margin-bottom: 2px;">MACRO EDGE FX</h2>
                 <p style="color: #34D399; font-size: 11px; font-family: monospace; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 25px;">Terminal Multiactivo Profesional</p>
@@ -501,14 +501,19 @@ def render_category_ranking(category_title, pairs_list):
         """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-# 1. Divisas
+# 1. Divisas (Lista Ampliada y Completa)
 forex_pairs = [
     ("EUR/USD", "EUR/USA", "Euro vs Dólar: Divergencia macroeconómica BCE vs Fed."),
     ("GBP/USD", "GBR/USA", "Libra vs Dólar: Empleo e inflación británica."),
     ("USD/JPY", "USA/JPN", "Dólar vs Yen: Divergencia de tipos Fed vs BoJ."),
     ("AUD/USD", "AUS/USA", "Australiano vs Dólar: Materias primas y demanda asiática."),
-    ("USD/CAD", "USA/CAN", "Dólar vs Canadiense: Correlación petrolera."),
-    ("EUR/GBP", "EUR/GBR", "Cruce estructural europeo.")
+    ("USD/CAD", "USA/CAN", "Dólar vs Canadiense: Correlación petrolera y balanza comercial."),
+    ("NZD/USD", "NZL/USA", "Neozelandés vs Dólar: Dairy auction y flujos oceanía."),
+    ("USD/CHF", "USA/CHE", "Dólar vs Franco Suizo: Refugio seguro vs tasa de interés."),
+    ("EUR/GBP", "EUR/GBR", "Cruce estructural europeo: Comercio bilateral Reino Unido-UE."),
+    ("EUR/JPY", "EUR/JPY", "Euro vs Yen: Cruce de alta volatilidad y apetito al riesgo."),
+    ("GBP/JPY", "GBR/JPN", "Libra vs Yen ('The Beast'): Máxima volatilidad y carry trade."),
+    ("AUD/JPY", "AUS/JPN", "Australiano vs Yen: Indicador clave del sentimiento de riesgo global.")
 ]
 render_category_ranking("Divisas", forex_pairs)
 
