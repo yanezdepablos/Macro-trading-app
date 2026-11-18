@@ -178,12 +178,20 @@ if 'asset_scores_history' not in st.session_state:
         'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO AISLADO ---
+# --- MOTOR MULTIACTIVO AISLADO (MERCADOS + REPORTES/INVENTARIOS PETRÓLEO) ---
 @st.cache_data(ttl=300)
 def fetch_real_macro_news_cached():
-    url = "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"
+    rss_urls = [
+        ("Google News Mercados", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
+        ("EIA / OPEC / WTI Crudo", "https://news.google.com/rss/search?q=WTI+crude+oil+OR+EIA+inventories+OR+OPEC+oil+market+report+when:5d&hl=en-US&gl=US&ceid=US:en")
+    ]
     
     asset_keywords = {
+        'WTI': ['wti', 'crude', 'oil', 'brent', 'energy', 'opec', 'eia', 'inventory', 'inventories', 'barrel', 'refinery', 'petroleum'],
+        'XAU': ['gold', 'xau', 'bullion', 'precious metals'],
+        'XAG': ['silver', 'xag'],
+        'BTC': ['bitcoin', 'btc', 'crypto', 'cryptocurrency'],
+        'ETH': ['ethereum', 'eth', 'altcoin'],
         'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc'],
         'EUR': ['eur', 'euro', 'ecb', 'lagarde', 'eurozone', 'germany'],
         'GBP': ['gbp', 'pound', 'sterling', 'boe', 'uk ', 'britain'],
@@ -196,85 +204,81 @@ def fetch_real_macro_news_cached():
         'NOK': ['nok', 'norway', 'krone'],
         'SGD': ['sgd', 'singapore'],
         'ZAR': ['zar', 'south africa', 'rand'],
-        'XAU': ['gold', 'xau', 'bullion', 'precious metals'],
-        'XAG': ['silver', 'xag'],
-        'WTI': ['wti', 'crude', 'oil', 'brent', 'energy', 'opec'],
-        'BTC': ['bitcoin', 'btc', 'crypto', 'cryptocurrency'],
-        'ETH': ['ethereum', 'eth', 'altcoin'],
         'US500': ['s&p 500', 'wall street', 'stocks', 'nasdaq', 'spx', 'equity'],
         'VIX': ['vix', 'volatility', 'fear index']
     }
     
-    bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull']
-    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear']
+    bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull', 'draw', 'tightens', 'cut output']
+    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear', 'build', 'glut', 'oversupply']
     
     live_news = []
     seen_titles = set()
     now_utc = datetime.datetime.now(datetime.timezone.utc)
-    max_age_days = 3
     headers = {'User-Agent': 'Mozilla/5.0'}
     
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as response:
-            xml_data = response.read()
-            root = ET.fromstring(xml_data)
-            
-            for item in root.findall('.//item')[:15]:
-                title_el = item.find('title')
-                pub_el = item.find('pubDate')
-                source_el = item.find('source')
+    for source_label, url in rss_urls:
+        max_age_days = 5 if source_label == "EIA / OPEC / WTI Crudo" else 3
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=5) as response:
+                xml_data = response.read()
+                root = ET.fromstring(xml_data)
                 
-                if title_el is None or not title_el.text: continue
-                title_text = title_el.text.strip()
-                
-                norm_title = title_text.lower().strip()
-                if norm_title in seen_titles: continue
+                for item in root.findall('.//item')[:15]:
+                    title_el = item.find('title')
+                    pub_el = item.find('pubDate')
+                    source_el = item.find('source')
                     
-                is_recent = False
-                pub_time_str = "Reciente"
-                if pub_el is not None and pub_el.text:
-                    try:
-                        parsed_date = email.utils.parsedate_to_datetime(pub_el.text)
-                        if parsed_date.tzinfo is None:
-                            parsed_date = parsed_date.replace(tzinfo=datetime.timezone.utc)
-                        if (now_utc - parsed_date).total_days() <= max_age_days:
+                    if title_el is None or not title_el.text: continue
+                    title_text = title_el.text.strip()
+                    
+                    norm_title = title_text.lower().strip()
+                    if norm_title in seen_titles: continue
+                        
+                    is_recent = False
+                    pub_time_str = "Reciente"
+                    if pub_el is not None and pub_el.text:
+                        try:
+                            parsed_date = email.utils.parsedate_to_datetime(pub_el.text)
+                            if parsed_date.tzinfo is None:
+                                parsed_date = parsed_date.replace(tzinfo=datetime.timezone.utc)
+                            if (now_utc - parsed_date).total_days() <= max_age_days:
+                                is_recent = True
+                                pub_time_str = parsed_date.strftime("%d/%m %H:%M UTC")
+                        except Exception:
                             is_recent = True
-                            pub_time_str = parsed_date.strftime("%d/%m %H:%M UTC")
-                    except Exception:
-                        is_recent = True
+                            
+                    if not is_recent: continue
+                    seen_titles.add(norm_title)
+                    title_lower = title_text.lower()
+                    
+                    detected_asset = 'WTI' if source_label == "EIA / OPEC / WTI Crudo" else 'USD'
+                    for asset, kws in asset_keywords.items():
+                        if any(kw in title_lower for kw in kws):
+                            detected_asset = asset
+                            break
+                            
+                    score_delta = 0.0
+                    for w in bullish_words:
+                        if w in title_lower: score_delta += 0.6
+                    for w in bearish_words:
+                        if w in title_lower: score_delta -= 0.6
                         
-                if not is_recent: continue
-                seen_titles.add(norm_title)
-                title_lower = title_text.lower()
-                
-                detected_asset = 'USD'
-                for asset, kws in asset_keywords.items():
-                    if any(kw in title_lower for kw in kws):
-                        detected_asset = asset
-                        break
-                        
-                score_delta = 0.0
-                for w in bullish_words:
-                    if w in title_lower: score_delta += 0.6
-                for w in bearish_words:
-                    if w in title_lower: score_delta -= 0.6
-                        
-                score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
-                real_source = source_el.text if (source_el is not None and source_el.text) else "Google News"
-                
-                live_news.append({
-                    "currency": detected_asset,
-                    "source": f"{real_source} ({pub_time_str})",
-                    "title": title_text,
-                    "impact": score_delta,
-                    "summary": f"Impacto analizado (< 3 días) para {detected_asset}."
-                })
-    except Exception:
-        pass
+                    score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
+                    real_source = source_el.text if (source_el is not None and source_el.text) else source_label
+                    
+                    live_news.append({
+                        "currency": detected_asset,
+                        "source": f"{real_source} ({pub_time_str})",
+                        "title": title_text,
+                        "impact": score_delta,
+                        "summary": f"Impacto analizado para {detected_asset} ({source_label})."
+                    })
+        except Exception:
+            continue
 
     if not live_news:
-        live_news = [{"currency": "USD", "source": "Filtro 72h", "title": "Sincronizando flujo de mercado en vivo...", "impact": 0.0, "summary": "Esperando eventos recientes."}]
+        live_news = [{"currency": "USD", "source": "Filtro Activo", "title": "Sincronizando flujo de mercado en vivo...", "impact": 0.0, "summary": "Esperando eventos recientes."}]
 
     return live_news
 
@@ -286,7 +290,8 @@ if 'last_news_processed' not in st.session_state:
     for item in live_news_feed:
         asset = item['currency']
         if asset in target_scores:
-            target_scores[asset] += (item['impact'] * 0.35)
+            weight = 0.45 if asset == 'WTI' else 0.35
+            target_scores[asset] += (item['impact'] * weight)
             target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
     alpha = 0.15
@@ -349,7 +354,7 @@ st.markdown(f"""
     <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
             <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
-            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (72H FILTRADO)</span>
+            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (WTI + MACRO)</span>
         </div>
         <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(52,211,153,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
             {user_badge}
@@ -559,7 +564,7 @@ render_category_ranking("Divisas", forex_pairs)
 metals_energy_assets = [
     ("XAU", "GOLD", "Oro Spot: Activo de refugio institucional y tasas reales."),
     ("XAG", "SILVER", "Plata Spot: Demanda industrial y metales preciosos."),
-    ("WTI", "ENERGY", "WTI Spot Oil: Petróleo crudo, inventarios y geopolítica en tiempo real.")
+    ("WTI", "ENERGY", "WTI Spot Oil: Petróleo crudo, inventarios EIA/OPEP y geopolítica.")
 ]
 render_single_asset_ranking("Metales y Energía (WTI Spot)", metals_energy_assets)
 
@@ -594,28 +599,25 @@ def get_thesis(asset):
 
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
-# --- FEED DE NOTICIAS (FORZADO A MÁXIMO 3 ÚNICAS) ---
-st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (< 72 Horas)</div>', unsafe_allow_html=True)
+# --- FEED DE NOTICIAS ---
+st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro</div>', unsafe_allow_html=True)
 
-raw_news = fetch_real_macro_news_cached()
 unique_news = []
 seen_titles_final = set()
-
-for item in raw_news:
+for item in live_news_feed:
     t_clean = item['title'].lower().strip()
     if t_clean not in seen_titles_final:
         seen_titles_final.add(t_clean)
         unique_news.append(item)
-    if len(unique_news) == 3:  # Forzamos exactamente 3
+    if len(unique_news) == 3:
         break
 
-# Renderizado vertical limpio y blindado
 for item in unique_news:
     c_val = "#34D399" if item['impact'] > 0 else "#EF4444"
     st.markdown(f"""
         <div class="asset-card">
             <div style="display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: #9CA3AF; margin-bottom: 4px;">
-                <span><b>{item['currency']}</b></span>
+                <span><b>{item['currency']}</b> · {item['source']}</span>
                 <span style="color: {c_val};">{item['impact']:+.1f} SD</span>
             </div>
             <div style="font-size: 12px; font-weight: 700; color: #F3F4F6; margin-bottom: 4px;">{item['title']}</div>
