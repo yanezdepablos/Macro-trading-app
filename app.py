@@ -175,7 +175,7 @@ if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
         'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
         'CHF': 5.3, 'NZD': 4.9, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.2, 'ZAR': 4.7,
-        'XAU': 6.8, 'XAG': 6.2, 'WTI': 5.4, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
+        'XAU': 6.8, 'XAG': 6.2, 'WTI': 4.3, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
 # --- MOTOR MULTIACTIVO AISLADO (MERCADOS + REPORTES/INVENTARIOS PETRÓLEO) ---
@@ -209,7 +209,7 @@ def fetch_real_macro_news_cached():
     }
     
     bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull', 'draw', 'tightens', 'cut output']
-    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear', 'build', 'glut', 'oversupply']
+    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear', 'build', 'glut', 'oversupply', 'weaker', 'demand concerns']
     
     live_news = []
     seen_titles = set()
@@ -262,7 +262,7 @@ def fetch_real_macro_news_cached():
                     for w in bullish_words:
                         if w in title_lower: score_delta += 0.6
                     for w in bearish_words:
-                        if w in title_lower: score_delta -= 0.6
+                        if w in title_lower: score_delta -= 0.7 if detected_asset == 'WTI' else 0.6
                         
                     score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
@@ -284,18 +284,20 @@ def fetch_real_macro_news_cached():
 
 live_news_feed = fetch_real_macro_news_cached()
 
-if 'last_news_processed' not in st.session_state:
-    st.session_state.last_news_processed = len(live_news_feed)
+# Recalcula cada vez que cambian las noticias cacheadas o el snapshot actual
+news_signature = tuple((n['currency'], n['title'], n['impact']) for n in live_news_feed)
+if st.session_state.get('last_news_signature') != news_signature:
+    st.session_state.last_news_signature = news_signature
     target_scores = st.session_state.asset_scores_history.copy()
     for item in live_news_feed:
         asset = item['currency']
         if asset in target_scores:
-            weight = 0.45 if asset == 'WTI' else 0.35
+            weight = 0.65 if asset == 'WTI' else 0.35
             target_scores[asset] += (item['impact'] * weight)
             target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
-    alpha = 0.15
     for asset, old_score in st.session_state.asset_scores_history.items():
+        alpha = 0.35 if asset == 'WTI' else 0.15
         new_target = target_scores.get(asset, old_score)
         smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
         st.session_state.asset_scores_history[asset] = smoothed_score
