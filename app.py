@@ -170,20 +170,23 @@ if not st.session_state.logged_in:
         """, unsafe_allow_html=True)
     st.stop()
 
-# --- INICIALIZACIÓN DE ESTADO ESTABLE PARA PRECIOS (BASE NEUTRAL PURA) ---
+# --- INICIALIZACIÓN DE ESTADO CON TENDENCIA MACRO ---
 if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
-        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0, 'AUD': 5.0, 'CAD': 5.0, 
-        'CHF': 5.0, 'NZD': 5.0, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.0, 'ZAR': 5.0,
-        'XAU': 5.0, 'XAG': 5.0, 'WTI': 5.0, 'BTC': 5.0, 'ETH': 5.0, 'US500': 5.0, 'VIX': 5.0
+        'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
+        'CHF': 5.3, 'NZD': 4.9, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.2, 'ZAR': 4.7,
+        'XAU': 6.8, 'XAG': 6.2, 'WTI': 4.2, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
     }
 
-# --- MOTOR MULTIACTIVO AISLADO (MERCADOS + REPORTES/INVENTARIOS PETRÓLEO) ---
+# --- MOTOR MULTIFUENTE 24/7 (MÚLTIPLES PORTALES Y RSS) ---
 @st.cache_data(ttl=300)
 def fetch_real_macro_news_cached():
-    rss_urls = [
-        ("Google News Mercados", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
-        ("EIA / OPEC / WTI Crudo", "https://news.google.com/rss/search?q=WTI+crude+oil+OR+EIA+inventories+OR+OPEC+oil+market+report+when:5d&hl=en-US&gl=US&ceid=US:en")
+    # Múltiples fuentes web y RSS para asegurar cobertura global continua 24/7
+    rss_sources = [
+        ("Google News Global", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
+        ("ForexLive News", "https://www.forexlive.com/feed"),
+        ("Kitco News (Metales)", "https://www.kitco.com/rss/kitconews.xml"),
+        ("EIA / OPEP / Petróleo Crudo", "https://news.google.com/rss/search?q=WTI+crude+oil+OR+EIA+inventories+OR+OPEC+oil+market+report+when:5d&hl=en-US&gl=US&ceid=US:en")
     ]
     
     asset_keywords = {
@@ -216,15 +219,15 @@ def fetch_real_macro_news_cached():
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     headers = {'User-Agent': 'Mozilla/5.0'}
     
-    for source_label, url in rss_urls:
-        max_age_days = 5 if source_label == "EIA / OPEC / WTI Crudo" else 3
+    for source_label, url in rss_sources:
+        max_age_days = 5 if "Crudo" in source_label else 3
         try:
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=4) as response:
                 xml_data = response.read()
                 root = ET.fromstring(xml_data)
                 
-                for item in root.findall('.//item')[:15]:
+                for item in root.findall('.//item')[:12]:
                     title_el = item.find('title')
                     pub_el = item.find('pubDate')
                     source_el = item.find('source')
@@ -252,7 +255,7 @@ def fetch_real_macro_news_cached():
                     seen_titles.add(norm_title)
                     title_lower = title_text.lower()
                     
-                    detected_asset = 'WTI' if source_label == "EIA / OPEC / WTI Crudo" else 'USD'
+                    detected_asset = 'WTI' if "Crudo" in source_label else 'USD'
                     for asset, kws in asset_keywords.items():
                         if any(kw in title_lower for kw in kws):
                             detected_asset = asset
@@ -272,34 +275,35 @@ def fetch_real_macro_news_cached():
                         "source": f"{real_source} ({pub_time_str})",
                         "title": title_text,
                         "impact": score_delta,
-                        "summary": f"Impacto analizado para {detected_asset} ({source_label})."
+                        "summary": f"Análisis multifuente 24/7 ({detected_asset})."
                     })
         except Exception:
             continue
 
     if not live_news:
-        live_news = [{"currency": "USD", "source": "Filtro Activo", "title": "Sincronizando flujo de mercado en vivo...", "impact": 0.0, "summary": "Esperando eventos recientes."}]
+        live_news = [{"currency": "USD", "source": "Multifuente Activa", "title": "Sincronizando flujos globales 24/7...", "impact": 0.0, "summary": "Esperando nuevos reportes."}]
 
     return live_news
 
 live_news_feed = fetch_real_macro_news_cached()
 
-# --- RECÁLCULO AUTÓNOMO SEGÚN FLUJO DE NOTICIAS ---
+# --- ACTUALIZACIÓN AUTÓNOMA ---
 news_signature = tuple((n['currency'], n['title'], n['impact']) for n in live_news_feed)
 if st.session_state.get('last_news_signature') != news_signature:
     st.session_state.last_news_signature = news_signature
-    target_scores = {k: 5.0 for k in st.session_state.asset_scores_history}
+    target_scores = st.session_state.asset_scores_history.copy()
 
     for item in live_news_feed:
         asset = item['currency']
         if asset in target_scores:
-            weight = 0.55 if asset == 'WTI' else 0.40
+            weight = 0.50 if asset == 'WTI' else 0.35
             target_scores[asset] += (item['impact'] * weight)
             target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
     for asset, old_score in st.session_state.asset_scores_history.items():
-        alpha = 0.40 if asset == 'WTI' else 0.25
-        smoothed_score = round(old_score * (1 - alpha) + target_scores[asset] * alpha, 1)
+        alpha = 0.30 if asset == 'WTI' else 0.15
+        new_target = target_scores.get(asset, old_score)
+        smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
         st.session_state.asset_scores_history[asset] = smoothed_score
 
 assets_data = {}
@@ -356,7 +360,7 @@ st.markdown(f"""
     <div style="background: rgba(13, 17, 23, 0.8); border: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div>
             <span style="font-size: 13px; font-weight: 800; color: white;">⚡ MACRO EDGE FX</span>
-            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● EN VIVO (WTI + MACRO)</span>
+            <span style="font-size: 10px; color: #34D399; display: block; font-family: monospace;">● RED 24/7 (MULTIFUENTE ACTIVA)</span>
         </div>
         <div style="font-family: monospace; font-size: 11px; color: #34D399; background: rgba(52,211,153,0.04); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(52,211,153,0.15);">
             {user_badge}
@@ -602,7 +606,7 @@ def get_thesis(asset):
 st.info(f"**Tesis Institucional ({sel_asset}):** {get_thesis(sel_asset)}")
 
 # --- FEED DE NOTICIAS ---
-st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">📰 Feed de Inteligencia Macro (Multifuente 24/7)</div>', unsafe_allow_html=True)
 
 unique_news = []
 seen_titles_final = set()
