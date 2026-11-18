@@ -170,12 +170,12 @@ if not st.session_state.logged_in:
         """, unsafe_allow_html=True)
     st.stop()
 
-# --- INICIALIZACIÓN DE ESTADO ESTABLE PARA PRECIOS ---
+# --- INICIALIZACIÓN DE ESTADO ESTABLE PARA PRECIOS (BASE NEUTRAL PURA) ---
 if 'asset_scores_history' not in st.session_state:
     st.session_state.asset_scores_history = {
-        'USD': 5.5, 'EUR': 4.8, 'GBP': 5.0, 'JPY': 4.2, 'AUD': 5.1, 'CAD': 5.0, 
-        'CHF': 5.3, 'NZD': 4.9, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.2, 'ZAR': 4.7,
-        'XAU': 6.8, 'XAG': 6.2, 'WTI': 4.3, 'BTC': 7.2, 'ETH': 6.5, 'US500': 6.1, 'VIX': 4.5
+        'USD': 5.0, 'EUR': 5.0, 'GBP': 5.0, 'JPY': 5.0, 'AUD': 5.0, 'CAD': 5.0, 
+        'CHF': 5.0, 'NZD': 5.0, 'SEK': 5.0, 'NOK': 5.0, 'SGD': 5.0, 'ZAR': 5.0,
+        'XAU': 5.0, 'XAG': 5.0, 'WTI': 5.0, 'BTC': 5.0, 'ETH': 5.0, 'US500': 5.0, 'VIX': 5.0
     }
 
 # --- MOTOR MULTIACTIVO AISLADO (MERCADOS + REPORTES/INVENTARIOS PETRÓLEO) ---
@@ -262,7 +262,7 @@ def fetch_real_macro_news_cached():
                     for w in bullish_words:
                         if w in title_lower: score_delta += 0.6
                     for w in bearish_words:
-                        if w in title_lower: score_delta -= 0.7 if detected_asset == 'WTI' else 0.6
+                        if w in title_lower: score_delta -= 0.6
                         
                     score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
@@ -284,22 +284,22 @@ def fetch_real_macro_news_cached():
 
 live_news_feed = fetch_real_macro_news_cached()
 
-# Recalcula cada vez que cambian las noticias cacheadas o el snapshot actual
+# --- RECÁLCULO AUTÓNOMO SEGÚN FLUJO DE NOTICIAS ---
 news_signature = tuple((n['currency'], n['title'], n['impact']) for n in live_news_feed)
 if st.session_state.get('last_news_signature') != news_signature:
     st.session_state.last_news_signature = news_signature
-    target_scores = st.session_state.asset_scores_history.copy()
+    target_scores = {k: 5.0 for k in st.session_state.asset_scores_history}
+
     for item in live_news_feed:
         asset = item['currency']
         if asset in target_scores:
-            weight = 0.65 if asset == 'WTI' else 0.35
+            weight = 0.55 if asset == 'WTI' else 0.40
             target_scores[asset] += (item['impact'] * weight)
             target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
 
     for asset, old_score in st.session_state.asset_scores_history.items():
-        alpha = 0.35 if asset == 'WTI' else 0.15
-        new_target = target_scores.get(asset, old_score)
-        smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
+        alpha = 0.40 if asset == 'WTI' else 0.25
+        smoothed_score = round(old_score * (1 - alpha) + target_scores[asset] * alpha, 1)
         st.session_state.asset_scores_history[asset] = smoothed_score
 
 assets_data = {}
