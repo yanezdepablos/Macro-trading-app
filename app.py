@@ -179,9 +179,8 @@ if 'asset_scores_history' not in st.session_state:
     }
 
 # --- MOTOR MULTIFUENTE 24/7 (MÚLTIPLES PORTALES Y RSS) ---
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=180)
 def fetch_real_macro_news_cached():
-    # Múltiples fuentes web y RSS para asegurar cobertura global continua 24/7
     rss_sources = [
         ("Google News Global", "https://news.google.com/rss/search?q=forex+OR+gold+OR+bitcoin+OR+wti+oil+OR+fed+inflation+when:3d&hl=en-US&gl=US&ceid=US:en"),
         ("ForexLive News", "https://www.forexlive.com/feed"),
@@ -195,7 +194,6 @@ def fetch_real_macro_news_cached():
         'XAG': ['silver', 'xag'],
         'BTC': ['bitcoin', 'btc', 'crypto', 'cryptocurrency'],
         'ETH': ['ethereum', 'eth', 'altcoin'],
-        'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc'],
         'EUR': ['eur', 'euro', 'ecb', 'lagarde', 'eurozone', 'germany'],
         'GBP': ['gbp', 'pound', 'sterling', 'boe', 'uk ', 'britain'],
         'JPY': ['jpy', 'yen', 'boj', 'bank of japan', 'ueda'],
@@ -207,12 +205,23 @@ def fetch_real_macro_news_cached():
         'NOK': ['nok', 'norway', 'krone'],
         'SGD': ['sgd', 'singapore'],
         'ZAR': ['zar', 'south africa', 'rand'],
+        'USD': ['usd', 'dollar', 'fed', 'federal reserve', 'powell', 'us ', 'u.s.', 'nfp', 'fomc', 'treasury', 'cpi'],
         'US500': ['s&p 500', 'wall street', 'stocks', 'nasdaq', 'spx', 'equity'],
         'VIX': ['vix', 'volatility', 'fear index']
     }
     
-    bullish_words = ['surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong', 'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull', 'draw', 'tightens', 'cut output']
-    bearish_words = ['drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak', 'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear', 'build', 'glut', 'oversupply', 'weaker', 'demand concerns']
+    bullish_words = [
+        'surge', 'jump', 'rise', 'higher', 'hawkish', 'hike', 'beat', 'strong',
+        'gain', 'rally', 'boost', 'hot', 'growth', 'soar', 'up', 'bull',
+        'draw', 'tightens', 'cut output', 'outperform', 'climbs', 'advances',
+        'firm', 'resilient', 'expansion'
+    ]
+    bearish_words = [
+        'drop', 'fall', 'plunge', 'lower', 'dovish', 'cut', 'miss', 'weak',
+        'loss', 'slump', 'cool', 'slow', 'decline', 'down', 'tumble', 'bear',
+        'build', 'glut', 'oversupply', 'weaker', 'demand concerns', 'slides',
+        'retreats', 'contraction', 'pressure', 'soft'
+    ]
     
     live_news = []
     seen_titles = set()
@@ -223,20 +232,22 @@ def fetch_real_macro_news_cached():
         max_age_days = 5 if "Crudo" in source_label else 3
         try:
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=4) as response:
+            with urllib.request.urlopen(req, timeout=5) as response:
                 xml_data = response.read()
                 root = ET.fromstring(xml_data)
                 
-                for item in root.findall('.//item')[:12]:
+                for item in root.findall('.//item')[:15]:
                     title_el = item.find('title')
                     pub_el = item.find('pubDate')
                     source_el = item.find('source')
                     
-                    if title_el is None or not title_el.text: continue
+                    if title_el is None or not title_el.text:
+                        continue
                     title_text = title_el.text.strip()
                     
                     norm_title = title_text.lower().strip()
-                    if norm_title in seen_titles: continue
+                    if norm_title in seen_titles:
+                        continue
                         
                     is_recent = False
                     pub_time_str = "Reciente"
@@ -251,27 +262,39 @@ def fetch_real_macro_news_cached():
                         except Exception:
                             is_recent = True
                             
-                    if not is_recent: continue
+                    if not is_recent:
+                        continue
                     seen_titles.add(norm_title)
                     title_lower = title_text.lower()
                     
-                    detected_asset = 'WTI' if "Crudo" in source_label else 'USD'
+                    matched_assets = []
                     for asset, kws in asset_keywords.items():
                         if any(kw in title_lower for kw in kws):
-                            detected_asset = asset
-                            break
+                            matched_assets.append(asset)
                             
-                    score_delta = 0.0
+                    if matched_assets:
+                        detected_asset = matched_assets[0]
+                    elif "Crudo" in source_label:
+                        detected_asset = 'WTI'
+                    elif "Metales" in source_label:
+                        detected_asset = 'XAU'
+                    else:
+                        detected_asset = 'USD'
+                            
+                    raw_delta = 0.0
                     for w in bullish_words:
-                        if w in title_lower: score_delta += 0.6
+                        if w in title_lower:
+                            raw_delta += 0.75
                     for w in bearish_words:
-                        if w in title_lower: score_delta -= 0.6
-                        
-                    score_delta = round(max(-2.0, min(2.0, score_delta)), 1)
+                        if w in title_lower:
+                            raw_delta -= 0.75
+                            
+                    score_delta = round(max(-2.5, min(2.5, raw_delta)), 1)
                     real_source = source_el.text if (source_el is not None and source_el.text) else source_label
                     
                     live_news.append({
                         "currency": detected_asset,
+                        "secondary_assets": matched_assets[1:3],
                         "source": f"{real_source} ({pub_time_str})",
                         "title": title_text,
                         "impact": score_delta,
@@ -281,27 +304,32 @@ def fetch_real_macro_news_cached():
             continue
 
     if not live_news:
-        live_news = [{"currency": "USD", "source": "Multifuente Activa", "title": "Sincronizando flujos globales 24/7...", "impact": 0.0, "summary": "Esperando nuevos reportes."}]
+        live_news = [{"currency": "USD", "secondary_assets": [], "source": "Multifuente Activa", "title": "Sincronizando flujos globales 24/7...", "impact": 0.0, "summary": "Esperando nuevos reportes."}]
 
     return live_news
 
 live_news_feed = fetch_real_macro_news_cached()
 
-# --- ACTUALIZACIÓN AUTÓNOMA ---
+# --- ACTUALIZACIÓN AUTÓNOMA CON MAYOR SENSIBILIDAD MACRO ---
 news_signature = tuple((n['currency'], n['title'], n['impact']) for n in live_news_feed)
 if st.session_state.get('last_news_signature') != news_signature:
     st.session_state.last_news_signature = news_signature
     target_scores = st.session_state.asset_scores_history.copy()
 
     for item in live_news_feed:
-        asset = item['currency']
-        if asset in target_scores:
-            weight = 0.50 if asset == 'WTI' else 0.35
-            target_scores[asset] += (item['impact'] * weight)
-            target_scores[asset] = max(1.0, min(9.9, target_scores[asset]))
+        primary = item['currency']
+        if primary in target_scores:
+            weight = 0.70 if primary == 'WTI' else 0.65
+            target_scores[primary] += (item['impact'] * weight)
+            target_scores[primary] = max(1.0, min(9.9, target_scores[primary]))
+            
+        for sec in item.get('secondary_assets', []):
+            if sec in target_scores and sec != primary:
+                target_scores[sec] += (item['impact'] * 0.35)
+                target_scores[sec] = max(1.0, min(9.9, target_scores[sec]))
 
     for asset, old_score in st.session_state.asset_scores_history.items():
-        alpha = 0.30 if asset == 'WTI' else 0.15
+        alpha = 0.45 if asset == 'WTI' else 0.35
         new_target = target_scores.get(asset, old_score)
         smoothed_score = round(old_score * (1 - alpha) + new_target * alpha, 1)
         st.session_state.asset_scores_history[asset] = smoothed_score
@@ -314,9 +342,9 @@ region_map = {
 }
 
 for asset, smoothed_score in st.session_state.asset_scores_history.items():
-    if smoothed_score >= 5.6:
+    if smoothed_score >= 5.5:
         status, color, bg = "Fuerte", "#34D399", "rgba(52, 211, 153, 0.12)"
-    elif smoothed_score <= 4.4:
+    elif smoothed_score <= 4.5:
         status, color, bg = "Débil", "#EF4444", "rgba(239, 68, 68, 0.12)"
     else:
         status, color, bg = "Neutral", "#FBBF24", "rgba(251, 191, 36, 0.12)"
@@ -448,16 +476,16 @@ def render_single_asset_ranking(category_title, assets_list):
     table_data = []
     for asset_key, region, thesis in assets_list:
         score = assets_data.get(asset_key, {'score': 5.0})['score']
-        if score >= 5.6:
+        if score >= 5.5:
             direction, dir_color = "COMPRAR", "#34D399"
-        elif score <= 4.4:
+        elif score <= 4.5:
             direction, dir_color = "VENDER", "#EF4444"
         else:
             direction, dir_color = "NEUTRAL", "#FBBF24"
             
-        prob = int(min(95, max(51, 50 + abs(score - 5.0) * 15)))
-        risk = "Alto" if abs(score - 5.0) > 2.5 else ("Bajo" if prob > 70 else "Medio")
-        risk_color = "#EF4444" if abs(score - 5.0) > 2.5 else ("#34D399" if prob > 70 else "#FBBF24")
+        prob = int(min(95, max(52, 50 + abs(score - 5.0) * 18)))
+        risk = "Alto" if abs(score - 5.0) > 2.2 else ("Bajo" if prob > 70 else "Medio")
+        risk_color = "#EF4444" if abs(score - 5.0) > 2.2 else ("#34D399" if prob > 70 else "#FBBF24")
         
         table_data.append({
             "Asset": asset_key, "Region": region, "Dir": direction, "Color": dir_color,
@@ -504,16 +532,16 @@ def render_category_ranking(category_title, pairs_list):
         q_score = assets_data.get(q, {'score': 5.0})['score']
         delta = b_score - q_score
         
-        if delta > 0.25:
+        if delta > 0.15:
             direction, dir_color = "COMPRAR", "#34D399"
-        elif delta < -0.25:
+        elif delta < -0.15:
             direction, dir_color = "VENDER", "#EF4444"
         else:
             direction, dir_color = "NEUTRAL", "#FBBF24"
             
-        prob = int(min(95, max(51, 50 + abs(delta) * 12)))
-        risk = "Alto" if abs(delta) > 3.0 else ("Bajo" if prob > 70 else "Medio")
-        risk_color = "#EF4444" if abs(delta) > 3.0 else ("#34D399" if prob > 70 else "#FBBF24")
+        prob = int(min(95, max(52, 50 + abs(delta) * 18)))
+        risk = "Alto" if abs(delta) > 2.5 else ("Bajo" if prob > 70 else "Medio")
+        risk_color = "#EF4444" if abs(delta) > 2.5 else ("#34D399" if prob > 70 else "#FBBF24")
         
         table_data.append({
             "Pair": pair, "Region": region, "Dir": direction, "Color": dir_color,
